@@ -29,3 +29,13 @@ def hms2dms(hms):
 
     elif isinstance(hms, (int, float)):
         return hms * 15
+
+
+def open_loc_file(obs_path, tgt_path):
+    with open(obs_path, "r") as f:
+        loc, obstime = f.readlines()
+
+    with open(tgt_path, "r") as f:
+        tgt = f.readlines()
+
+    return loc, obstime, tgt
