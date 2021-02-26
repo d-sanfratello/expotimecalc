@@ -1,3 +1,6 @@
+from pathlib import Path
+Path(__file__).resolve()
+
 from astropy.coordinates.angles import Latitude
 from astropy.coordinates.angles import Longitude
 

@@ -1,6 +1,9 @@
-import location as loc
-import time as time
-import skylocation as skyloc
+from pathlib import Path
+Path(__file__).resolve()
+
+from . import location as loc
+from . import time as time
+from . import skylocation as skyloc
 
 from . import open_loc_file as olf
 
