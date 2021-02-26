@@ -1,8 +1,8 @@
-from . import location as loc
-from . import time as time
-from . import skylocation as skyloc
+from src import location as loc
+from src import time as time
+from src import skylocation as skyloc
 
-from . import open_loc_file as olf
+from src import open_loc_file as olf
 
 import sys
 
