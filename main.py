@@ -1,6 +1,3 @@
-from pathlib import Path
-Path(__file__).resolve()
-
 from . import location as loc
 from . import time as time
 from . import skylocation as skyloc

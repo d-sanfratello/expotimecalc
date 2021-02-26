@@ -1,5 +1,3 @@
-from pathlib import Path
-Path(__file__).resolve()
 # import numpy as np
 
 # from astropy import units as u
