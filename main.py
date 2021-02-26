@@ -11,7 +11,7 @@ def main(argv):
     prompt = False
 
     if len(argv) == 1:
-        log_geo = input("\tCoordinates of observatory:\t").upper()
+        loc_geo = input("\tCoordinates of observatory:\t").upper()
         obstime = input("\tTime of observation:\t").upper()
         tgt = input("\tPosition of target:\t").upper()
 
@@ -19,8 +19,8 @@ def main(argv):
     else:
         loc_geo, obstime, tgt = olf(argv[1], argv[2])
 
-    location = loc.Location(locstring=loc)
-    obsdate = time.Time(obstime)
+    location = loc.Location(locstring=loc_geo)
+    obsdate = time.Time(obstime, format='isot')
     target = skyloc.SkyLocation(locstring=tgt, obstime=obsdate)
 
 
