@@ -1,6 +1,10 @@
 import numpy as np
 
-# from astropy import units as u
+from astropy import units as u
+
+
+Tsidday = 23.9345 * u.hour
+# GMST2000 =
 
 
 def str2dms(string):
@@ -26,7 +30,6 @@ def hms2dms(hms):
         sec = float(sec) / 3600
 
         return (hour + mins + sec) * 15
-
     elif isinstance(hms, (int, float)):
         return hms * 15
 
