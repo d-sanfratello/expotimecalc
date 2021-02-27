@@ -10,6 +10,11 @@ planning of observations.
 * `astropy 4.0.2`: This code uses this version but, since no specific function is required, any
   version of `astropy` released just before that one should be enough. See `astropy`'s website
   for their installation instructions.
+* `numpy 1.19.3`: Again, any fairly recent version of `numpy` should work, but I recommend
+  Windows users to use `numpy >= 1.19.3` because of some issues inside the earliest releases of
+  `numpy 1.19`, due to some bugs in their external requirements. More info about this should be
+  found in the `issues` page on `numpy`'s repository. Again, see `numpy`'s website for the
+  installation instructions.
 
 ## Usage
 To run the program, you just need to call `python main.py` inside your terminal. A set of
