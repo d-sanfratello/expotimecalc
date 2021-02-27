@@ -50,6 +50,20 @@ class Versor:
                              np.cos(dec)*np.sin(ra),
                              np.sin(dec)], dtype=np.float64)
 
+    def rotate(self, axis, angle, unit='rad'):
+        Rmat = RotationMatrix(axis, angle, unit)
+
+        self.vsr = Rmat.mat.dot(self.vsr)
+
+        return self
+
+    def rotate_inv(self, axis, angle, unit='rad'):
+        Rmat = RotationMatrix(axis, angle, unit)
+
+        self.vsr = Rmat.inv.dot(self.vsr)
+
+        return self
+
 
 class RotationMatrix:
     def __init__(self, axis, angle, unit='deg'):
@@ -63,16 +77,23 @@ class RotationMatrix:
         self.unit = unit
 
         if unit == 'deg':
-            angle *= (2*np.pi/360)
+            self.angle *= (2*np.pi/360)
 
         self.mat = self.matrix(axis, angle)
+        self.inv = self.matrix(axis, -angle)
 
     def matrix(self, axis, angle):
         if axis == 'x':
-            pass
+            return np.array([[1,             0,              0],
+                             [0, np.cos(angle), -np.sin(angle)],
+                             [0, np.sin(angle),  np.cos(angle)]], dtype=nd.float64)
         elif axis == 'y':
-            pass
-        else:
+            return np.array([[ np.cos(angle), 0, np.sin(angle)],
+                             [             0, 1,             0],
+                             [-np.sin(angle), 0, np.cos(angle)]], dtype=nd.float64)
+        elif axis == 'z':
             return np.array([[np.cos(angle), -np.sin(angle), 0],
                              [np.sin(angle),  np.cos(angle), 0],
-                             [             0,             0, 1]])
+                             [             0,             0, 1]], dtype=nd.float64)
+        else:
+            raise ValueError("Invalid axis")
