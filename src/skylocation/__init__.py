@@ -25,7 +25,7 @@ class SkyLocation(location.Location):
             self.obstime = obstime.utc
         else:
             self.obstime = Time(obstime).utc
-        self.epoch = epoch
+        self.epoch = Time(epoch).utc
 
         self.vector_epoch = Versor(self.ra, self.dec)
         self.vector_obstime = None
@@ -35,7 +35,7 @@ class SkyLocation(location.Location):
         if epoch not in ['J2000']:
             raise ValueError("`epoch` is not a valid epoch string.")
 
-        self.epoch = epoch
+        self.epoch = Time(epoch).utc
 
         # defined for J2000. Needs revision for other epochs
         self.vector_epoch = self.vector_epoch.rotate_inv('x', self.nutation_corr(self.obstime))\
