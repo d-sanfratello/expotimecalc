@@ -34,15 +34,19 @@ class Location:
             lat = type(self).parse_string(lat, 'N', 'S')
         elif isinstance(lat, (int, float)):
             lat = Latitude(lat, unit='deg')
-        else:
+        elif isinstance(lat, Latitude):
             lat = lat
+        else:
+            raise TypeError("`lat` cannot be of type `Longitude`.")
 
         if isinstance(lon, str):
             lon = type(self).parse_string(lon, 'E', 'W')
         elif isinstance(lon, (int, float)):
             lon = Longitude(lon, unit='deg')
-        else:
+        elif isinstance(lon, Longitude):
             lon = lon
+        else:
+            raise TypeError("`lon` cannot be of type `Latitude`.")
 
         self.lat = lat
         self.lon = lon
