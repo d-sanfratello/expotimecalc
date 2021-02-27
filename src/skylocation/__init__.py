@@ -51,3 +51,11 @@ class SkyLocation(location.Location):
         self.vector_obstime = self.vector_epoch.rotate_inv('x', self.nutation_corr(self.obstime), copy=True)\
             .rotate('z', self.equinox_prec_corr(self.obstime), copy=True)\
             .rotate_inv('x', self.nutation_corr(self.obstime), copy=True)
+
+    @staticmethod
+    def equinox_prec_corr(obstime):
+        pass
+
+    @staticmethod
+    def nutation_corr(obstime):
+        pass
