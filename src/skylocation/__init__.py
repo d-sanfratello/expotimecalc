@@ -1,16 +1,23 @@
-import numpy as np
+# import numpy as np
 
 from astropy.time import Time
 
 from .. import location
 from .. import hms2dms
+from .. import Versor
 
 
 class SkyLocation(location.Location):
 
-    # prec_period
+    @staticmethod
+    def equinox_prec_corr(obstime):
+        pass
 
-    def __init__(self, locstring=None, ra=None, dec=None, obstime=None):
+    @staticmethod
+    def nutation_corr(obstime):
+        pass
+
+    def __init__(self, locstring=None, ra=None, dec=None, obstime=None, epoch='J2000'):
         if ra is not None:
             ra = hms2dms(ra)
         elif locstring is not None:
@@ -18,19 +25,38 @@ class SkyLocation(location.Location):
 
         super(SkyLocation, self).__init__(locstring, lat=dec, lon=ra)
 
-        self.__dict__['dec'] = self.__dict__.pop('lat')
-        self.__dict__['ra'] = self.__dict__.pop('lon')
+        self.dec = self.__dict__.pop('lat')
+        self.ra = self.__dict__.pop('lon')
 
         if obstime is None:
-            self.obsepoch = Time.now().utc
+            self.obstime = Time(epoch).utc
         elif isinstance(obstime, Time):
-            self.obsepoch = obstime.utc
+            self.obstime = obstime.utc
         else:
-            self.obsepoch = Time(obstime).utc
-        self.epoch = self.obsepoch
+            self.obstime = Time(obstime).utc
+        self.epoch = epoch
 
-    def convert_to_epoch(self, epoch='now'):
-        if epoch not in ['J2000', 'now']:
+        self.vector_epoch = Versor(self.ra, self.dec)
+        self.vector_obstime = None
+        self.observe_at_date(self.obstime)
+
+    def convert_to_epoch(self, epoch='J2000'):
+        if epoch not in ['J2000']:
             raise ValueError("`epoch` is not a valid epoch string.")
 
+        self.epoch = epoch
 
+        # defined for J2000. Needs revision for other epochs
+        self.vector_epoch = self.vector_epoch.rotate_inv('x', self.nutation_corr(self.obstime))\
+            .rotate_inv('z', self.equinox_prec_corr(self.obstime))\
+            .rotate('x', self.nutation_corr(self.obstime))
+
+    def observe_at_date(self, obstime):
+        if isinstance(obstime, Time):
+            self.obstime = obstime.utc
+        else:
+            self.obstime = Time(obstime).utc
+
+        self.vector_obstime = self.vector_epoch.rotate_inv('x', self.nutation_corr(self.obstime), copy=True)\
+            .rotate('z', self.equinox_prec_corr(self.obstime), copy=True)\
+            .rotate_inv('x', self.nutation_corr(self.obstime), copy=True)
