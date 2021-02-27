@@ -8,15 +8,6 @@ from .. import Versor
 
 
 class SkyLocation(location.Location):
-
-    @staticmethod
-    def equinox_prec_corr(obstime):
-        pass
-
-    @staticmethod
-    def nutation_corr(obstime):
-        pass
-
     def __init__(self, locstring=None, ra=None, dec=None, obstime=None, epoch='J2000'):
         if ra is not None:
             ra = hms2dms(ra)
