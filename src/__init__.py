@@ -42,34 +42,41 @@ def open_loc_file(obs_path, tgt_path):
 
 
 class Versor:
-    def __init__(self, ra, dec):
-        self.ra = ra
-        self.dec = dec
+    def __init__(self, ra=None, dec=None, vector=None):
+        if (ra is None and ra is None) and vector is None:
+            raise ValueError("Must give either a set of coordinates or a ra-dec position.")
 
-        self.vsr = np.array([np.cos(dec)*np.cos(ra),
-                             np.cos(dec)*np.sin(ra),
-                             np.sin(dec)], dtype=np.float64)
+        if ra is not None and dec is not None:
+            self.ra = ra
+            self.dec = dec
+
+            self.vsr = np.array([np.cos(dec)*np.cos(ra),
+                                 np.cos(dec)*np.sin(ra),
+                                 np.sin(dec)], dtype=np.float64)
+        else:
+            self.vsr = vector/np.sqrt((vector**2).sum())
+
+            self.ra = np.arctan2(self.vsr[1]/self.vsr[0])
+            self.dec = np.arctan2(self.vsr[2]/np.sqrt(self.vsr[0]**2 + self.vsr[1]**2))
 
     def rotate(self, axis, angle, unit='rad'):
-        Rmat = RotationMatrix(axis, angle, unit)
-
-        self.vsr = Rmat.mat.dot(self.vsr)
+        r_mat = RotationMatrix(axis, angle, unit)
+        self.vsr = r_mat.mat.dot(self.vsr)
 
         return self
 
     def rotate_inv(self, axis, angle, unit='rad'):
-        Rmat = RotationMatrix(axis, angle, unit)
-
-        self.vsr = Rmat.inv.dot(self.vsr)
+        r_mat = RotationMatrix(axis, angle, unit)
+        self.vsr = r_mat.inv.dot(self.vsr)
 
         return self
 
 
 class RotationMatrix:
     def __init__(self, axis, angle, unit='deg'):
-        if axis is not in ['x', 'y', 'z']:
+        if axis not in ['x', 'y', 'z']:
             raise ValueError("Not a valid rotation axis.")
-        if unit is not in ['deg', 'rad']:
+        if unit not in ['deg', 'rad']:
             raise ValueError("Unknown angle unit.")
 
         self.axis = axis
@@ -82,18 +89,19 @@ class RotationMatrix:
         self.mat = self.matrix(axis, angle)
         self.inv = self.matrix(axis, -angle)
 
-    def matrix(self, axis, angle):
+    @staticmethod
+    def matrix(axis, angle):
         if axis == 'x':
             return np.array([[1,             0,              0],
                              [0, np.cos(angle), -np.sin(angle)],
-                             [0, np.sin(angle),  np.cos(angle)]], dtype=nd.float64)
+                             [0, np.sin(angle),  np.cos(angle)]], dtype=np.float64)
         elif axis == 'y':
             return np.array([[ np.cos(angle), 0, np.sin(angle)],
                              [             0, 1,             0],
-                             [-np.sin(angle), 0, np.cos(angle)]], dtype=nd.float64)
+                             [-np.sin(angle), 0, np.cos(angle)]], dtype=np.float64)
         elif axis == 'z':
             return np.array([[np.cos(angle), -np.sin(angle), 0],
                              [np.sin(angle),  np.cos(angle), 0],
-                             [             0,             0, 1]], dtype=nd.float64)
+                             [             0,             0, 1]], dtype=np.float64)
         else:
             raise ValueError("Invalid axis")
