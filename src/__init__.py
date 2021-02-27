@@ -54,22 +54,28 @@ class Versor:
                                  np.cos(dec)*np.sin(ra),
                                  np.sin(dec)], dtype=np.float64)
         else:
-            self.vsr = vector/np.sqrt((vector**2).sum())
+            self.vsr = np.copy(vector/np.sqrt((vector**2).sum()))
 
             self.ra = np.arctan2(self.vsr[1]/self.vsr[0])
             self.dec = np.arctan2(self.vsr[2]/np.sqrt(self.vsr[0]**2 + self.vsr[1]**2))
 
-    def rotate(self, axis, angle, unit='rad'):
+    def rotate(self, axis, angle, unit='rad', copy=False):
         r_mat = RotationMatrix(axis, angle, unit)
         self.vsr = r_mat.mat.dot(self.vsr)
 
-        return self
+        if copy:
+            return Versor(vector=self.vsr)
+        else:
+            return self
 
-    def rotate_inv(self, axis, angle, unit='rad'):
+    def rotate_inv(self, axis, angle, unit='rad', copy=False):
         r_mat = RotationMatrix(axis, angle, unit)
         self.vsr = r_mat.inv.dot(self.vsr)
 
-        return self
+        if copy:
+            return Versor(vector=self.vsr)
+        else:
+            return self
 
 
 class RotationMatrix:
