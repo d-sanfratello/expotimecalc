@@ -1,4 +1,4 @@
-# import numpy as np
+import numpy as np
 
 from astropy.time import Time
 
@@ -58,4 +58,5 @@ class SkyLocation(location.Location):
 
     @staticmethod
     def nutation_corr(obstime):
-        pass
+        # check for Earth Fact Sheet at https://nssdc.gsfc.nasa.gov/planetary/factsheet/earthfact.html
+        return np.deg2rad(23.44)
