@@ -14,6 +14,14 @@ class Location:
         else:
             return float(coord_string)
 
+    @staticmethod
+    def equinox_prec_corr(obstime):
+        pass
+
+    @staticmethod
+    def nutation_corr(obstime):
+        pass
+
     def __init__(self, locstring=None, lat=None, lon=None):
         if locstring is None and (lat is None and lon is None):
             raise ValueError("Must declare location of observatory.")
