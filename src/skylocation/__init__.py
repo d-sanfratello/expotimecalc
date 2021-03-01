@@ -5,6 +5,7 @@ from astropy.time import Time
 from .. import location
 from .. import hms2dms
 from .. import Versor
+from .. import Tprec
 
 
 class SkyLocation(location.Location):
@@ -54,7 +55,7 @@ class SkyLocation(location.Location):
 
     @staticmethod
     def equinox_prec_corr(obstime):
-        pass
+        return (2*np.pi/Tprec) * (t - tJ2000)
 
     @staticmethod
     def nutation_corr(obstime):
