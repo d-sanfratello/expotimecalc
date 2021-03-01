@@ -1,10 +1,13 @@
 import numpy as np
 
 from astropy import units as u
+from .time import Time
 
 
 Tsidday = 23.9345 * u.hour
-# GMST2000 =
+Tprec = 26000 * u.year
+tJ2000 = Time('J2000.0')
+# GMSTe2000 =
 
 
 def str2dms(string):
