@@ -50,3 +50,20 @@ class Location:
 
         self.lat = lat
         self.lon = lon
+
+    def zenith_at_epoch(self, epoch='J2000'):
+        if epoch not in ['J2000']:
+            raise ValueError("`epoch` is not a valid epoch string.")
+
+        self.epoch = Time(epoch).utc
+
+        # defined for J2000. Needs revision for other epochs
+        self.vector_epoch = self.vector_epoch.rotate('z', self.day_rotation(self.obstime))
+
+    def zenith_at_date(self, obstime):
+        if isinstance(obstime, Time):
+            self.obstime = obstime.utc
+        else:
+            self.obstime = Time(obstime).utc
+
+        self.vector_obstime = self.vector_e
