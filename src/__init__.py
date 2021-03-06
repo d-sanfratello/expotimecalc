@@ -3,10 +3,6 @@ import numpy as np
 from astropy import units as u
 from .time import Time
 
-import src.location
-import src.observation
-import src.time
-import src.skylocation
 
 Tsidday = 23.9345 * u.hour
 Tprec = 26000 * u.year
@@ -121,3 +117,8 @@ class RotationMatrix:
                              [             0,             0, 1]], dtype=np.float64)
         else:
             raise ValueError("Invalid axis")
+
+import src.location
+import src.observation
+import src.time
+import src.skylocation
