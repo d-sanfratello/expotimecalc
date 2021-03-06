@@ -26,7 +26,7 @@ class Observation:
             .rotate('z', self.sidereal_day(self.target.epoch) + GMST2000.rad + self.location.lon.rad, unit='rad')
 
     def zenith_at_date(self, obstime):
-        self.zenith = self.zenithJ2000.rotate('z', self.sidereal_day(obstime), unit='rad')
+        return self.zenithJ2000.rotate('z', self.sidereal_day(obstime), unit='rad')
 
     def sidereal_day(self, obstime, epoch_time=None):
         return (2*np.pi/Tsidday) * (obstime - self.target.epoch)
