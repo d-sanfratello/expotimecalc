@@ -10,7 +10,7 @@ import sys
 def main(argv):
     prompt = False
 
-    if len(argv) == 1:
+    if len(argv) <= 1:
         loc_geo = input("\tCoordinates of observatory:\t").upper()
         obstime = input("\tTime of observation:\t").upper()
         tgt = input("\tPosition of target:\t").upper()
