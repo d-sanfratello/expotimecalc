@@ -1,16 +1,18 @@
 from astropy.coordinates.angles import Latitude
 from astropy.coordinates.angles import Longitude
 
+from src import str2dms
+
 
 class Location:
     valid_coord_types = (int, float, str, Latitude, Longitude)
 
     @classmethod
     def parse_string(cls, coord_string, coord_letter_pos, coord_letter_neg):
-        if coord_string.upper().find(coord_letter_pos.upper()) >= 0:
-            return float(coord_string[:-1])
-        elif coord_string.upper().find(coord_letter_neg.upper()) >= 0:
-            return -float(coord_string[:-1])
+        if _ := coord_string.lower().find(coord_letter_pos.lower()) >= 0:
+            return str2dms(coord_string[:_])
+        elif _ := coord_string.lower().find(coord_letter_neg.lower()) >= 0:
+            return -str2dms(coord_string[:_])
         else:
             return float(coord_string)
 
