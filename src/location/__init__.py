@@ -1,7 +1,7 @@
 from astropy.coordinates.angles import Latitude
 from astropy.coordinates.angles import Longitude
 
-from src import str2dms
+from src import str2dms as str2dms
 
 
 class Location:
