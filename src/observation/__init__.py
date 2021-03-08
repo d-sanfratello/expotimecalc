@@ -22,6 +22,8 @@ class Observation:
         self.obstime = obstime
         self.target = target
 
+        self.target.observe_at_date(self.obstime)
+
         self.zenithJ2000 = Versor(ra=0., dec=self.location.lat.rad, unit='rad')\
             .rotate('z', self.sidereal_day(self.target.epoch) + GMSTeq2000.rad + self.location.lon.rad, unit='rad')
 
@@ -31,4 +33,4 @@ class Observation:
         return self.zenithJ2000.rotate('z', self.sidereal_day(obstime), unit='rad')
 
     def sidereal_day(self, obstime, epoch_time=None):
-        return (2*np.pi/Tsidday) * (obstime - self.target.epoch)
+        return (2*np.pi/Tsidday.value) * (obstime - self.target.epoch).jd
