@@ -4,16 +4,40 @@ from astropy.time import Time
 
 from .. import location
 from .. import hms2dms
+from .. import dms2dec
 from .. import Versor
 from .. import Tprec
 
+from .. import tJ2000
+
 
 class SkyLocation(location.Location):
-    def __init__(self, locstring=None, ra=None, dec=None, obstime=None, epoch='J2000'):
-        if ra is not None:
-            ra = hms2dms(ra)
-        elif locstring is not None:
-            ra = hms2dms(locstring.split()[0])
+    def __init__(self, locstring=None, ra=None, dec=None, obstime=None, ra_unit='hms', dec_unit='deg', epoch='J2000'):
+        if locstring is not None:
+            ra, dec = locstring.split()
+
+        if ra is not None and dec is not None:
+            if isinstance(ra, str) and ra.lower().find("h") >= 0:
+                ra = hms2dms(ra)
+            elif ra_unit == 'hms':
+                ra *= 15  # 1h = 15°
+            elif ra_unit == 'deg':
+                ra = ra
+            elif ra_unit == 'rad':
+                ra = np.rad2deg(ra)
+            else:
+                raise ValueError("Unknown unit of measure in Right Ascension.")
+
+            if isinstance(dec, str) and dec.lower().find("d") >= 0:
+                dec = dms2dec(dec)
+            elif dec_unit == 'deg':
+                dec = dec
+            elif dec_unit == 'rad':
+                dec = np.rad2deg(dec)
+            else:
+                raise ValueError("Unknown unit of measure in Declination.")
+        else:
+            raise ValueError("Must select at least one between `locstring` and the `ra`-`dec` couple.")
 
         super(SkyLocation, self).__init__(locstring, lat=dec, lon=ra)
 
