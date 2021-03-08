@@ -6,6 +6,7 @@ from ..time import Time
 from .. import Versor
 
 from .. import Tsidday
+from .. import GMSTeq2000
 
 
 class Observation:
@@ -21,9 +22,10 @@ class Observation:
         self.obstime = obstime
         self.target = target
 
+        self.zenithJ2000 = Versor(ra=0., dec=self.location.lat.rad, unit='rad')\
+            .rotate('z', self.sidereal_day(self.target.epoch) + GMSTeq2000.rad + self.location.lon.rad, unit='rad')
+
         self.zenith = self.zenith_at_date(self.obstime)
-        self.zenithJ2000 = Versor(ra=0., dec=self.location.lat.rad)\
-            .rotate('z', self.sidereal_day(self.target.epoch) + GMST2000.rad + self.location.lon.rad, unit='rad')
 
     def zenith_at_date(self, obstime):
         return self.zenithJ2000.rotate('z', self.sidereal_day(obstime), unit='rad')
