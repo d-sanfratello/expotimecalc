@@ -37,6 +37,21 @@ def hms2dms(hms):
         return hms * 15
 
 
+def dms2dec(dms):
+    if not isinstance(dms, str):
+        raise TypeError("`dms` must be a string.")
+
+    deg, minsec = dms.lower().split('d')
+    min, sec = minsec.lower().split('m')
+    sec = sec[:-1]
+
+    deg = float(deg)
+    min = float(min) / 60
+    sec = float(sec) / 3600
+
+    return deg + min + sec
+
+
 def open_loc_file(obs_path, tgt_path):
     with open(obs_path, "r") as f:
         loc, obstime = f.readlines()
