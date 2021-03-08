@@ -4,7 +4,7 @@ from astropy import units as u
 from .time import Time
 
 
-Tsidday = 23.9345 * u.hour
+Tsidday = (23.9345 * u.hour).to(u.day)
 Tprec = (26000 * u.year).to(u.day)
 tJ2000 = Time('J2000.0')
 
@@ -70,10 +70,9 @@ class GMSTeq2000:
     TimeSpan: 2000-03-20 07:25:00 - 2000-03-20 07:26:00, intervals=100
     settings=default, display=default (HTML)
     """
-    def __init__(self):
-        self.time = Time('2000-03-20T07:25:24.600', scale='ut1', format='isot')
-
-
+    time = Time('2000-03-20T07:25:24.600', scale='ut1', format='isot')
+    hour = time.jd % 1
+    rad = 2 * np.pi * hour
 
 
 class Versor:
