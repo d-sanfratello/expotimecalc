@@ -33,7 +33,7 @@ class Location:
             lat, lon = locstring.split()
 
         if isinstance(lat, str):
-            lat = type(self).parse_string(lat, 'N', 'S')
+            lat = Latitude(type(self).parse_string(lat, 'N', 'S'), unit='deg')
         elif isinstance(lat, (int, float)):
             lat = Latitude(lat, unit='deg')
         elif isinstance(lat, Latitude):
@@ -42,7 +42,7 @@ class Location:
             raise TypeError("`lat` cannot be of type `Longitude`.")
 
         if isinstance(lon, str):
-            lon = type(self).parse_string(lon, 'E', 'W')
+            lon = Longitude(type(self).parse_string(lon, 'E', 'W'), unit='deg')
         elif isinstance(lon, (int, float)):
             lon = Longitude(lon, unit='deg')
         elif isinstance(lon, Longitude):
