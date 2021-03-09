@@ -29,8 +29,13 @@ class Observation:
 
         self.zenith = self.zenith_at_date(self.obstime)
 
+        self.target_ha = self.calculate_ha()
+
     def zenith_at_date(self, obstime):
         return self.zenithJ2000.rotate('z', self.sidereal_day(obstime), unit='rad')
 
     def sidereal_day(self, obstime, epoch_time=None):
         return (2*np.pi/Tsidday.value) * (obstime - self.target.epoch).jd
+
+    def calculate_ha(self):
+
