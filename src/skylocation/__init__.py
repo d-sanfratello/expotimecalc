@@ -53,8 +53,7 @@ class SkyLocation(location.Location):
         self.epoch = Time(epoch).utc
 
         self.vector_epoch = Versor(self.ra, self.dec)
-        self.vector_obstime = None
-        self.observe_at_date(self.obstime)
+        self.vector_obstime = self.observe_at_date(self.obstime)
 
     def convert_to_epoch(self, epoch='J2000'):
         if epoch not in ['J2000']:
@@ -67,15 +66,20 @@ class SkyLocation(location.Location):
             .rotate_inv('z', self.equinox_prec_corr(self.obstime))\
             .rotate('x', self.nutation_corr(self.obstime))
 
-    def observe_at_date(self, obstime):
+    def observe_at_date(self, obstime, copy=True):
         if isinstance(obstime, Time):
             self.obstime = obstime.utc
         else:
             self.obstime = Time(obstime).utc
 
-        self.vector_obstime = self.vector_epoch.rotate_inv('x', self.nutation_corr(self.obstime), copy=True)\
+        vector_obstime = self.vector_epoch.rotate_inv('x', self.nutation_corr(self.obstime), copy=True)\
             .rotate('z', self.equinox_prec_corr(self.obstime), copy=True)\
-            .rotate_inv('x', self.nutation_corr(self.obstime), copy=True)
+            .rotate('x', self.nutation_corr(self.obstime), copy=True)
+
+        if copy:
+            return vector_obstime
+        else:
+            self.vector_obstime = vector_obstime
 
     @staticmethod
     def equinox_prec_corr(obstime):
