@@ -14,7 +14,10 @@ from src import tJ2000
 
 
 class SkyLocation(Location):
-    def __init__(self, locstring=None, ra=None, dec=None, obstime=None, ra_unit='hour', dec_unit='deg', epoch='J2000'):
+    epoch_names = {'J2000':'J'}
+
+    def __init__(self, locstring=None, ra=None, dec=None, obstime=None, ra_unit='hour', dec_unit='deg', epoch='J2000',
+                 name=None):
         if locstring is not None:
             ra, dec = locstring.split()
 
@@ -41,10 +44,15 @@ class SkyLocation(Location):
         else:
             raise ValueError("Must select at least one between `locstring` and the `ra`-`dec` couple.")
 
+        if name is not None and not isinstance(name, str):
+            raise TypeError("`name` kwarg must be either `Nonetype` or `string`.")
+
         super(SkyLocation, self).__init__(locstring, lat=dec, lon=ra)
 
         self.dec = self.__dict__.pop('lat')
         self.ra = self.__dict__.pop('lon')
+
+        self.name = self.name_object(name, epoch)
 
         if obstime is None:
             self.obstime = Time(epoch).utc
@@ -82,6 +90,17 @@ class SkyLocation(Location):
             return vector_obstime
         else:
             self.vector_obstime = vector_obstime
+
+    def name_object(self, name, epoch):
+        if name is None:
+            coords = self.__repr__()
+            if self.dec.deg >= 0:
+                coords.replace(' ', '+')
+            else:
+                coords.replace(' ', '')
+            return self.epoch_names[epoch] + coords
+        else:
+            return name
 
     def __str__(self):
         ra, dec = self.__repr__().split()
