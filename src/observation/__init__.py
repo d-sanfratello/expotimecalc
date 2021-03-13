@@ -97,11 +97,11 @@ class Observation:
         plt.close(1)
         plt.figure(1)
 
-        plt.subplot2grid(2,1,0,0)
+        plt.subplot2grid((2, 1), (0, 0))
         plt.grid()
         plt.plot(times, alt, 'k-')
 
-        plt.subplot2grid(2,1,1,0)
+        plt.subplot2grid((2, 1), (1, 0))
         plt.grid()
         plt.plot(times, az, 'k-')
 
