@@ -1,3 +1,3 @@
-from astropy.time import Time
+import astropy.time as time
 
-Time = Time
+Time = time.Time
