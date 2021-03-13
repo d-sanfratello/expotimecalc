@@ -5,9 +5,6 @@ from astropy import units as u
 from astropy.visualization import time_support
 from astropy.visualization import quantity_support
 
-time_support(scale='utc', format='mjd')
-quantity_support()
-
 from src.location import Location
 from src.skylocation import SkyLocation
 from src.time import Time
@@ -15,6 +12,10 @@ from src import Versor
 
 from src import Tsidday
 from src import eq2000
+
+
+time_support(scale='utc', format='iso', simplify=True)
+quantity_support()
 
 
 class Observation:
@@ -100,31 +101,36 @@ class Observation:
             index += 1
 
         times = Time([t for t in times], scale='utc')
+        times = times.to_value('iso', subfmt='date_hm')
         alt = u.quantity.Quantity([at for at in alt])
         az = u.quantity.Quantity([z for z in az])
 
         plt.close(1)
         fig = plt.figure(1)
 
+        fig.suptitle(self.target.name)
+
         ax1 = plt.subplot2grid((2, 1), (0, 0))
         ax1.grid()
         ax1.plot(times, alt, 'k-')
         ax1.set_ylim(-90, 90)
-        ax1.locator_params(axis='y', nbins=7)
+        ax1.yaxis.set_ticks(np.linspace(-90, 90, 7))
+        ax1.xaxis.set_major_locator(plt.MaxNLocator(25))
         ax1.set_xticklabels([])
         ax1.set_xlabel('')
+        ax1.set_ylabel('Alt [deg]')
 
         ax2 = plt.subplot2grid((2, 1), (1, 0))
         ax2.grid()
         ax2.plot(times, az, 'k-')
         ax2.set_ylim(0, 360)
-        ax2.locator_params(axis='y', nbins=13)
+        ax2.yaxis.set_ticks(np.linspace(0, 360, 13))
+        ax2.xaxis.set_major_locator(plt.MaxNLocator(25))
         ax2.xaxis.set_tick_params(rotation=80)
+        ax2.set_ylabel('Az [deg]')
 
         ax1.set_xlim(min(times), max(times))
         ax2.set_xlim(min(times), max(times))
-        ax1.locator_params(axis='x', nbins=25)
-        ax2.locator_params(axis='x', nbins=25)
 
         fig.tight_layout()
         fig.show()
