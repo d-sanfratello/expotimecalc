@@ -2,6 +2,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from astropy import units as u
+from astropy.visualization import time_support
+from astropy.visualization import quantity_support
+
+time_support(scale='utc', format='mjd')
+quantity_support()
 
 from src.location import Location
 from src.skylocation import SkyLocation
@@ -15,11 +20,11 @@ from src import eq2000
 class Observation:
     def __init__(self, location, obstime=None, target=None):
         if not isinstance(location, Location):
-            raise TypeError("Must be of type `expotimecalc.location.Location`.")
+            raise TypeError("Must be of type `src.location.Location`.")
         if not isinstance(obstime, Time):
-            raise TypeError("Must be of type `expotimecalc.time.Time` or `astropy.time.Time`.")
+            raise TypeError("Must be of type `src.time.Time` or `astropy.time.Time`.")
         if not isinstance(target, SkyLocation):
-            raise TypeError("Must be of type `expotimecalc.skylocation.SkyLocation`.")
+            raise TypeError("Must be of type `src.skylocation.SkyLocation`.")
 
         self.location = location
         self.obstime = obstime
@@ -41,16 +46,16 @@ class Observation:
         return self.zenithJ2000.rotate('z', self.sidereal_day(obstime), unit='rad', copy=True)
 
     def sidereal_day(self, obstime, epoch_time=None):
-        return (2*np.pi/Tsidday.value) * (obstime - self.target.epoch).jd * u.rad
+        return ((2*np.pi/Tsidday.value) * (obstime - self.target.epoch).jd) % (2*np.pi) * u.rad
 
     def LST(self, location, obstime):
-        return eq2000.GMST.deg + self.sidereal_day(obstime).to(u.deg) + location.lon
+        return (eq2000.GMST.deg + self.sidereal_day(obstime).to(u.deg) + location.lon) % (360*u.deg)
 
     def calculate_ha(self, target, location, obstime):
-        return self.LST(location, obstime).to(u.deg) - target.ra
+        return (self.LST(location, obstime).to(u.deg) - target.ra) % (360*u.deg)
 
     def calculate_az(self, target, location, obstime):
-        return self.calculate_ha(target, location, obstime) - 180 * u.deg
+        return (self.calculate_ha(target, location, obstime) - 180 * u.deg) % (360*u.deg)
 
     def calculate_alt(self, zenith='default', target='default'):
         if zenith != 'default' and not isinstance(zenith, Versor):
@@ -68,10 +73,10 @@ class Observation:
         else:
             target_vsr = target.vsr
 
-        if ps := zenith_vsr.dot(target_vsr) >= 0:
-            return np.rad2deg(np.arccos(ps)) * u.deg
+        if (ps := zenith_vsr.dot(target_vsr)) >= 0:
+            return (90 - np.rad2deg(np.arccos(ps))) % 90 * u.deg
         else:
-            return -np.rad2deg(np.arccos(ps)) * u.deg
+            return (90 - np.rad2deg(np.arccos(ps))) % -90 * u.deg
 
     def plot_altaz_onday(self, interval=15*u.min):
         interval = interval.to(u.hour)
@@ -94,15 +99,32 @@ class Observation:
 
             index += 1
 
+        times = Time([t for t in times], scale='utc')
+        alt = u.quantity.Quantity([at for at in alt])
+        az = u.quantity.Quantity([z for z in az])
+
         plt.close(1)
-        plt.figure(1)
+        fig = plt.figure(1)
 
-        plt.subplot2grid((2, 1), (0, 0))
-        plt.grid()
-        plt.plot(times, alt, 'k-')
+        ax1 = plt.subplot2grid((2, 1), (0, 0))
+        ax1.grid()
+        ax1.plot(times, alt, 'k-')
+        ax1.set_ylim(-90, 90)
+        ax1.locator_params(axis='y', nbins=7)
+        ax1.set_xticklabels([])
+        ax1.set_xlabel('')
 
-        plt.subplot2grid((2, 1), (1, 0))
-        plt.grid()
-        plt.plot(times, az, 'k-')
+        ax2 = plt.subplot2grid((2, 1), (1, 0))
+        ax2.grid()
+        ax2.plot(times, az, 'k-')
+        ax2.set_ylim(0, 360)
+        ax2.locator_params(axis='y', nbins=13)
+        ax2.xaxis.set_tick_params(rotation=80)
 
-        plt.show()
+        ax1.set_xlim(min(times), max(times))
+        ax2.set_xlim(min(times), max(times))
+        ax1.locator_params(axis='x', nbins=25)
+        ax2.locator_params(axis='x', nbins=25)
+
+        fig.tight_layout()
+        fig.show()
