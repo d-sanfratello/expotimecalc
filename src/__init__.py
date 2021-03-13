@@ -1,6 +1,9 @@
 import numpy as np
 
 from astropy import units as u
+from astropy.coordinates.angles import Latitude
+from astropy.coordinates.angles import Longitude
+
 from .time import Time
 
 
@@ -9,19 +12,20 @@ Tprec = (26000 * u.year).to(u.day)
 tJ2000 = Time('J2000.0')
 
 
-def str2dms(string):
-    deg, minsec = string.lower().split('d')
-    mins, sec = minsec.lower().split('m')
-    sec = sec[:-1]
+# # Useless given dms2deg works with str, too?
+# def str2dms(string):
+#     deg, minsec = string.lower().split('d')
+#     mins, sec = minsec.lower().split('m')
+#     sec = sec[:-1]
+#
+#     deg = float(deg)
+#     mins = float(mins) / 60
+#     sec = float(sec) / 3600
+#
+#     return deg + mins + sec
 
-    deg = float(deg)
-    mins = float(mins) / 60
-    sec = float(sec) / 3600
 
-    return deg + mins + sec
-
-
-def hms2dms(hms):
+def hms2deg(hms):
     if isinstance(hms, str):
         hour, minsec = hms.lower().split('h')
         mins, sec = minsec.lower().split('m')
@@ -31,14 +35,16 @@ def hms2dms(hms):
         mins = float(mins) / 60
         sec = float(sec) / 3600
 
-        return (hour + mins + sec) * 15
+        return (hour + mins + sec) * 15 * u.deg
     elif isinstance(hms, (int, float)):
-        return hms * 15
+        return hms * 15 * u.deg
     elif isinstance(hms, u.quantity.Quantity) and hms.unit == "h":
         return hms * 360*u.deg / (24 * u.hour)
+    elif isinstance(hms, (np.ndarray, tuple, list)) and len(hms) == 3:
+        return (hms[0] + hms[1] + hms[2]).to(u.hour).value * 15 * u.deg
 
 
-def dms2dec(dms):
+def dms2deg(dms):
     if not isinstance(dms, str):
         raise TypeError("`dms` must be a string.")
 
@@ -46,11 +52,42 @@ def dms2dec(dms):
     mins, sec = minsec.lower().split('m')
     sec = sec[:-1]
 
-    deg = float(deg)
-    mins = float(mins) / 60
-    sec = float(sec) / 3600
+    deg = float(deg) * u.deg
+    mins = float(mins) / 60 * u.arcmin
+    sec = float(sec) / 3600 * u.arcsec
 
-    return deg + mins + sec
+    if deg.value >= 0:
+        return deg + mins + sec
+    else:
+        return deg - mins - sec
+
+
+# # maybe useless bc.o. ra.hms?
+# def hour2hms(hour):
+#     if not isinstance(hour, (float, int, u.quantity.Quantity)):
+#         raise TypeError("`hour` must be either a number (float or int) or a `astropy.units.quantity.Quantity`.")
+#     if isinstance(hour, u.quantity.Quantity) and hour.unit != 'h':
+#         raise TypeError("`hour` must be a time or hourangle unit.")
+#
+#     h = int(hour) * u.hour
+#     m = int(hour % h.value * 60) * u.min
+#     s = (hour % h.value * 60) % m.value * 60 * u.s
+#
+#     return h, m, s
+#
+#
+# # maybe useless bc.o. dec.dms?
+# def deg2dms(deg):
+#     if not isinstance(deg, (float, int, u.quantity.Quantity)):
+#         raise TypeError("`deg` must be either a number (float or int) or a `astropy.units.quantity.Quantity`.")
+#     if isinstance(deg, u.quantity.Quantity) and hour.unit != 'deg':
+#         raise TypeError("`deg` must be an angle unit.")
+#
+#     d = int(deg) * u.deg
+#     m = int(deg % d.value) * u.arcmin
+#     s = (deg % d.value * 60) % m.value * 60 * u.arcsec
+#
+#     return d, m, s
 
 
 def open_loc_file(obs_path, tgt_path):
@@ -65,7 +102,7 @@ def open_loc_file(obs_path, tgt_path):
 
 class GMSTeq2000:
     hms = 19 * u.hour + 17 * u.min + 57.3258 * u.s
-    deg = hms2dms(hms)
+    deg = hms2deg(hms)
     rad = deg.to(u.rad)
 
 
@@ -96,26 +133,38 @@ class eq2000:
 
 
 class Versor:
-    def __init__(self, ra=None, dec=None, vector=None, unit='deg'):
-        if unit not in ['deg', 'rad', 'hmsdms']:
-            raise ValueError("Must use a valid unit of measure.")
-
+    def __init__(self, ra=None, dec=None, vector=None, unit=None):
         if (ra is None and dec is None) and vector is None:
             raise ValueError("Must give either a set of coordinates or a ra-dec position.")
 
+        if vector is None:
+            if not isinstance(ra, u.quantity.Quantity) and not isinstance(dec, u.quantity.Quantity):
+                if unit is None:
+                    raise ValueError("Must specify the unit of measure.")
+                elif unit not in ['deg', 'rad', 'hmsdms']:
+                    raise ValueError("Must use a valid unit of measure.")
+
         if ra is not None and dec is not None:
             if unit == 'deg':
+                self.ra = ra * u.deg
+                self.dec = dec * u.deg
+            elif unit == 'rad':
+                self.ra = np.rad2deg(ra) * u.deg
+                self.dec = np.rad2deg(dec) * u.deg
+            elif unit == 'hmsdms':
+                self.ra = hms2deg(ra) * u.deg
+                self.dec = dms2deg(dec) * u.deg
+            else:
                 self.ra = ra
                 self.dec = dec
-            elif unit == 'rad':
-                self.ra = np.rad2deg(ra)
-                self.dec = np.rad2deg(dec)
-            else:
-                self.ra = hms2dms(ra)
-                self.dec = dms2dec(dec)
 
-            ra = np.deg2rad(self.ra)
-            dec = np.deg2rad(self.dec)
+            if not isinstance(dec, Latitude):
+                self.dec = Latitude(self.dec)
+            if not isinstance(ra, Longitude):
+                self.ra = Longitude(self.ra)
+
+            ra = self.ra.rad
+            dec = self.dec.rad
 
             self.vsr = np.array([np.cos(dec)*np.cos(ra),
                                  np.cos(dec)*np.sin(ra),
@@ -126,41 +175,51 @@ class Versor:
             self.ra = np.arctan2(self.vsr[1], self.vsr[0])
             self.dec = np.arctan2(self.vsr[2], np.sqrt(self.vsr[0]**2 + self.vsr[1]**2))
 
-            self.ra = np.rad2deg(self.ra)
-            self.dec = np.rad2deg(self.dec)
+            self.ra = Longitude(np.rad2deg(self.ra) * u.deg)
+            self.dec = Latitude(np.rad2deg(self.dec) * u.deg)
 
     def rotate(self, axis, angle, unit='rad', copy=False):
         r_mat = RotationMatrix(axis, angle, unit)
-        self.vsr = r_mat.mat.dot(self.vsr)
+        vsr = r_mat.mat.dot(self.vsr)
 
         if copy:
-            return Versor(vector=self.vsr)
+            return Versor(vector=vsr)
         else:
+            self.vsr = vsr
             return self
 
     def rotate_inv(self, axis, angle, unit='rad', copy=False):
         r_mat = RotationMatrix(axis, angle, unit)
-        self.vsr = r_mat.inv.dot(self.vsr)
+        vsr = r_mat.inv.dot(self.vsr)
 
         if copy:
-            return Versor(vector=self.vsr)
+            return Versor(vector=vsr)
         else:
+            self.vsr = vsr
             return self
 
 
 class RotationMatrix:
     def __init__(self, axis, angle, unit='deg'):
-        if axis not in ['x', 'y', 'z']:
+        if axis.lower() not in ['x', 'y', 'z']:
             raise ValueError("Not a valid rotation axis.")
-        if unit not in ['deg', 'rad']:
+        if unit not in ['deg', 'rad'] and\
+                (not isinstance(angle, u.quantity.Quantity) and angle.unit not in ['deg', 'rad']):
             raise ValueError("Unknown angle unit.")
+
+        if isinstance(angle, u.quantity.Quantity):
+            unit = angle.unit
+        else:
+            if unit == 'deg':
+                angle *= u.deg
+            elif unit == 'rad':
+                angle *= u.rad
 
         self.axis = axis
         self.angle = angle
         self.unit = unit
 
-        if unit == 'deg':
-            self.angle *= (2*np.pi/360)
+        angle = self.angle.to(u.rad)
 
         self.mat = self.matrix(axis, angle)
         self.inv = self.matrix(axis, -angle)
