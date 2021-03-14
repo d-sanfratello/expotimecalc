@@ -31,17 +31,55 @@ class Observation:
         self.obstime = obstime
         self.target = target
 
-        self.target.observe_at_date(self.obstime, copy=False)
-
         self.zenithJ2000 = Versor(ra=0., dec=self.location.lat.rad, unit='rad')\
             .rotate('z', self.sidereal_day(self.target.epoch) + eq2000.GMST.rad + self.location.lon, unit='rad')
 
-        self.zenith = self.zenith_at_date(self.obstime)
+        self.zenith = None
 
-        self.target_ha = self.calculate_ha(self.target, self.location, self.obstime)
-        self.target_azimuth = self.calculate_az(self.target, self.location, self.obstime)
+        self.target_ha = None
+        self.target_azimuth = None
+        self.target_alt = None
+        self.target_airmass = None
 
+        self.target_culmination = None
+        self.target_visibility = None
+
+        self.target_rise_time = None
+        self.target_rise_azimuth = None
+        self.target_rise_ha = None
+
+        self.target_set_time = None
+        self.target_set_azimuth = None
+        self.target_set_ha = None
+
+        self.make_observation(self.obstime)
+
+    def make_observation(self, obstime):
+        if not isinstance(obstime, Time):
+            raise TypeError("Must be of type `src.time.Time` or `astropy.time.Time`.")
+
+        self.obstime = obstime
+
+        self.target.observe_at_date(self.obstime, copy=False)
+
+        self.zenith = self.zenith_at_date(obstime)
+
+        self.target_ha = self.calculate_ha(self.target, self.location, obstime)
+        self.target_azimuth = self.calculate_az(self.target, self.location, obstime)
         self.target_alt = self.calculate_alt()
+
+        self.target_airmass = None
+
+        self.target_culmination = None
+        self.target_visibility = None
+
+        self.target_rise_time = None
+        self.target_rise_azimuth = None
+        self.target_rise_ha = None
+
+        self.target_set_time = None
+        self.target_set_azimuth = None
+        self.target_set_ha = None
 
     def zenith_at_date(self, obstime):
         return self.zenithJ2000.rotate('z', self.sidereal_day(obstime), unit='rad', copy=True)
