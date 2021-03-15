@@ -8,21 +8,9 @@ from .time import Time
 
 
 Tsidday = (23.9345 * u.hour).to(u.day)
+Tsidyear = 365.256363004 * u.day  # https://hpiers.obspm.fr/eop-pc/models/constants.html
 Tprec = (26000 * u.year).to(u.day)
 tJ2000 = Time('J2000.0')
-
-
-# # Useless given dms2deg works with str, too?
-# def str2dms(string):
-#     deg, minsec = string.lower().split('d')
-#     mins, sec = minsec.lower().split('m')
-#     sec = sec[:-1]
-#
-#     deg = float(deg)
-#     mins = float(mins) / 60
-#     sec = float(sec) / 3600
-#
-#     return deg + mins + sec
 
 
 def hms2deg(hms):
@@ -62,34 +50,6 @@ def dms2deg(dms):
         return deg - mins - sec
 
 
-# # maybe useless bc.o. ra.hms?
-# def hour2hms(hour):
-#     if not isinstance(hour, (float, int, u.quantity.Quantity)):
-#         raise TypeError("`hour` must be either a number (float or int) or a `astropy.units.quantity.Quantity`.")
-#     if isinstance(hour, u.quantity.Quantity) and hour.unit != 'h':
-#         raise TypeError("`hour` must be a time or hourangle unit.")
-#
-#     h = int(hour) * u.hour
-#     m = int(hour % h.value * 60) * u.min
-#     s = (hour % h.value * 60) % m.value * 60 * u.s
-#
-#     return h, m, s
-#
-#
-# # maybe useless bc.o. dec.dms?
-# def deg2dms(deg):
-#     if not isinstance(deg, (float, int, u.quantity.Quantity)):
-#         raise TypeError("`deg` must be either a number (float or int) or a `astropy.units.quantity.Quantity`.")
-#     if isinstance(deg, u.quantity.Quantity) and hour.unit != 'deg':
-#         raise TypeError("`deg` must be an angle unit.")
-#
-#     d = int(deg) * u.deg
-#     m = int(deg % d.value) * u.arcmin
-#     s = (deg % d.value * 60) % m.value * 60 * u.arcsec
-#
-#     return d, m, s
-
-
 def open_loc_file(obs_path, tgt_path):
     with open(obs_path, "r") as f:
         loc, obstime = f.readlines()
@@ -106,7 +66,7 @@ class GMSTeq2000:
     rad = deg.to(u.rad)
 
 
-class eq2000:
+class Equinox2000:
     """
     ssd.jpl.nasa.gov/horizons.cgi
 
@@ -246,3 +206,4 @@ import src.location
 import src.observation
 import src.time
 import src.skylocation
+import src.skylocation.sun
