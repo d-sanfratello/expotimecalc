@@ -184,7 +184,7 @@ class Observation:
         return culm_t - Tsidday.to(u.hour)/(2*np.pi) * np.arccos(-np.tan(self.target.ra) * np.tan(self.location.lat))
 
     def calculate_visibility(self):
-        warning.warn("At the moment this method does not take into account the Sun's position.")
+        warnings.warn("At the moment this method does not take into account the Sun's position.")
 
         if abs(self.target.dec) >= abs(self.location.lat):
             if self.target.dec * self.location.lat > 0:
