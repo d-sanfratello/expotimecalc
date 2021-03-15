@@ -1,6 +1,9 @@
 import numpy as np
 
 from astropy import units as u
+from astropy.coordinates.angles import Latitude
+from astropy.coordinates.angles import Longitude
+from astropy.units.quantity import Quantity
 
 from src.time import Time
 from src.location import Location
@@ -24,6 +27,8 @@ class SkyLocation(Location):
         if ra is not None and dec is not None:
             if isinstance(ra, str) and ra.lower().find("h") >= 0:
                 ra = hms2deg(ra)
+            elif isinstance(ra, Quantity):
+                ra = Longitude(ra)
             elif ra_unit == 'hour':
                 # 1h = 15°
                 ra *= 15
@@ -36,6 +41,8 @@ class SkyLocation(Location):
 
             if isinstance(dec, str) and dec.lower().find("d") >= 0:
                 dec = dms2deg(dec)
+            elif isinstance(dec, Quantity):
+                dec = Latitude(dec)
             elif dec_unit == 'deg':
                 dec = dec
             elif dec_unit == 'rad':
@@ -64,7 +71,7 @@ class SkyLocation(Location):
         self.epoch = Time(epoch).utc
 
         self.vector_epoch = Versor(self.ra, self.dec)
-        self.vector_obstime = self.observe_at_date(self.obstime)
+        self.vector_obstime = self.precession_at_date(self.obstime)
 
     def convert_to_epoch(self, epoch='J2000'):
         if epoch not in ['J2000']:
@@ -77,7 +84,7 @@ class SkyLocation(Location):
             .rotate_inv('z', self.equinox_prec_corr(self.obstime))\
             .rotate('x', self.nutation_corr(self.obstime))
 
-    def observe_at_date(self, obstime, copy=True):
+    def precession_at_date(self, obstime, copy=True):
         if isinstance(obstime, Time):
             self.obstime = obstime.utc
         else:
@@ -124,9 +131,11 @@ class SkyLocation(Location):
 
     @staticmethod
     def equinox_prec_corr(obstime):
-        return (2*np.pi/Tprec.value) * (obstime - tJ2000).jd
+        return ((2*np.pi/Tprec.value) * (obstime - tJ2000).jd) % (2*np.pi) * u.rad
 
     @staticmethod
     def nutation_corr(obstime):
         # check for Earth Fact Sheet at https://nssdc.gsfc.nasa.gov/planetary/factsheet/earthfact.html
         return 23.44 * u.deg
+
+import src.skylocation.sun
