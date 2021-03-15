@@ -13,6 +13,8 @@ from src import Versor
 from src import Tsidday
 from src import eq2000
 
+import warnings
+
 
 time_support(scale='utc', format='iso', simplify=True)
 quantity_support()
@@ -39,18 +41,18 @@ class Observation:
         self.target_ha = None
         self.target_azimuth = None
         self.target_alt = None
-        self.target_airmass = None
+        self.airmass = None
 
-        self.target_culmination = None
-        self.target_visibility = None
+        self.culmination = None
+        self.visibility = None
 
-        self.target_rise_time = None
-        self.target_rise_azimuth = None
-        self.target_rise_ha = None
+        self.rise_time = None
+        self.rise_azimuth = None
+        self.rise_ha = None
 
-        self.target_set_time = None
-        self.target_set_azimuth = None
-        self.target_set_ha = None
+        self.set_time = None
+        self.set_azimuth = None
+        self.set_ha = None
 
         self.make_observation(self.obstime)
 
@@ -68,18 +70,26 @@ class Observation:
         self.target_azimuth = self.calculate_az(self.target, self.location, obstime)
         self.target_alt = self.calculate_alt()
 
-        self.target_airmass = None
+        if (ps := self.zenith.vsr.dot(self.target.vector_obstime)) > 0:
+            # airmass = sec(z) = 1/cos(z)
+            self.airmass = 1 / ps
+        else:
+            self.airmass = 0
+        warnings.warn("Airmass is calculated for a uniform, plane-parallel atmosphere. "
+                      "Hence, airmass value is just an upper limit at lower and lower altitudes above the horizon.")
 
-        self.target_culmination = None
-        self.target_visibility = None
+        self.culmination = self.calculate_culmination(obstime)
 
-        self.target_rise_time = None
-        self.target_rise_azimuth = None
-        self.target_rise_ha = None
+        self.set_time = self.calculate_set_time(obstime)
+        self.rise_time = self.calculate_rise_time(obstime)
 
-        self.target_set_time = None
-        self.target_set_azimuth = None
-        self.target_set_ha = None
+        self.visibility = self.calculate_visibility()
+
+        self.rise_azimuth = self.calculate_az(self.target, self.location, self.rise_time)
+        self.rise_ha = self.calculate_ha(self.target, self.location, self.rise_time)
+
+        self.set_azimuth = self.calculate_az(self.target, self.location, self.set_time)
+        self.set_ha = self.calculate_ha(self.target, self.location, self.set_time)
 
     def zenith_at_date(self, obstime):
         return self.zenithJ2000.rotate('z', self.sidereal_day(obstime), unit='rad', copy=True)
@@ -87,11 +97,11 @@ class Observation:
     def sidereal_day(self, obstime, epoch_time=None):
         return ((2*np.pi/Tsidday.value) * (obstime - self.target.epoch).jd) % (2*np.pi) * u.rad
 
-    def LST(self, location, obstime):
+    def lst(self, location, obstime):
         return (eq2000.GMST.deg + self.sidereal_day(obstime).to(u.deg) + location.lon) % (360*u.deg)
 
     def calculate_ha(self, target, location, obstime):
-        return (self.LST(location, obstime).to(u.deg) - target.ra) % (360*u.deg)
+        return ((self.lst(location, obstime).to(u.deg) - target.ra) % (360 * u.deg)) * (24 * u.hour) / (360 * u.deg)
 
     def calculate_az(self, target, location, obstime):
         return (self.calculate_ha(target, location, obstime) - 180 * u.deg) % (360*u.deg)
@@ -116,6 +126,39 @@ class Observation:
             return (90 - np.rad2deg(np.arccos(ps))) % 90 * u.deg
         else:
             return (90 - np.rad2deg(np.arccos(ps))) % -90 * u.deg
+
+    def calculate_culmination(self, obstime, epoch_time=None):
+        if self.target.dec * self.location.lat <= 0 and abs(self.target.dec) >= abs(self.location.lat):
+            return None
+        else:
+            time = (Tsidday/(2*np.pi)) * (self.target.ra.rad - eq2000.GMST.rad - self.location.lon.rad)\
+                   % (2*np.pi*u.rad) + self.target.epoch + obstime
+            return time
+
+    def calculate_set_time(self, obstime):
+        if self.target.dec >= self.location.lat or self.target.dec <= -self.location.lat:
+            return None
+
+        culm_t = self.calculate_culmination(obstime)
+        return culm_t + Tsidday.to(u.hour)/(2*np.pi) * np.arccos(-np.tan(self.target.ra) * np.tan(self.location.lat))
+
+    def calculate_rise_time(self, obstime):
+        if self.target.dec >= self.location.lat or self.target.dec <= -self.location.lat:
+            return None
+
+        culm_t = self.calculate_culmination(obstime)
+        return culm_t - Tsidday.to(u.hour)/(2*np.pi) * np.arccos(-np.tan(self.target.ra) * np.tan(self.location.lat))
+
+    def calculate_visibility(self):
+        warning.warn("At the moment this method does not take into account the Sun's position.")
+
+        if abs(self.target.dec) >= abs(self.location.lat):
+            if self.target.dec * self.location.lat > 0:
+                return 24 * u.hour
+            elif self.target.dec * self.location.lat <= 0:
+                return 0 * u.hour
+        else:
+            return 2 * Tsidday.to(u.hour)/(2*np.pi) * np.arccos(-np.tan(self.target.ra) * np.tan(self.location.lat))
 
     def plot_altaz_onday(self, interval=15*u.min):
         interval = interval.to(u.hour)
