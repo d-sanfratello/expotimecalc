@@ -14,7 +14,7 @@ from src import tJ2000
 
 
 class SkyLocation(Location):
-    epoch_names = {'J2000':'J'}
+    epoch_names = {'J2000': 'J'}
 
     def __init__(self, locstring=None, ra=None, dec=None, obstime=None, ra_unit='hour', dec_unit='deg', epoch='J2000',
                  name=None):
@@ -25,7 +25,8 @@ class SkyLocation(Location):
             if isinstance(ra, str) and ra.lower().find("h") >= 0:
                 ra = hms2deg(ra)
             elif ra_unit == 'hour':
-                ra *= 15  # 1h = 15°
+                # 1h = 15°
+                ra *= 15
             elif ra_unit == 'deg':
                 ra = ra
             elif ra_unit == 'rad':
