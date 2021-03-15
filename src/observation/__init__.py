@@ -7,11 +7,12 @@ from astropy.visualization import quantity_support
 
 from src.location import Location
 from src.skylocation import SkyLocation
+from src.skylocation.sun import Sun
 from src.time import Time
 from src import Versor
 
 from src import Tsidday
-from src import eq2000
+from src import Equinox2000
 
 import warnings
 
@@ -32,9 +33,10 @@ class Observation:
         self.location = location
         self.obstime = obstime
         self.target = target
+        self.sun = Sun(self.obstime)
 
         self.zenithJ2000 = Versor(ra=0., dec=self.location.lat.rad, unit='rad')\
-            .rotate('z', self.sidereal_day(self.target.epoch) + eq2000.GMST.rad + self.location.lon, unit='rad')
+            .rotate('z', self.sidereal_day(self.target.epoch) + Equinox2000.GMST.rad + self.location.lon, unit='rad')
 
         self.zenith = None
 
@@ -62,7 +64,7 @@ class Observation:
 
         self.obstime = obstime
 
-        self.target.observe_at_date(self.obstime, copy=False)
+        self.target.precession_at_date(self.obstime, copy=False)
 
         self.zenith = self.zenith_at_date(obstime)
 
@@ -70,7 +72,7 @@ class Observation:
         self.target_azimuth = self.calculate_az(self.target, self.location, obstime)
         self.target_alt = self.calculate_alt()
 
-        if (ps := self.zenith.vsr.dot(self.target.vector_obstime)) > 0:
+        if (ps := self.zenith.vsr.dot(self.target.vector_obstime.vsr)) > 0:
             # airmass = sec(z) = 1/cos(z)
             self.airmass = 1 / ps
         else:
@@ -86,16 +88,16 @@ class Observation:
         self.visibility = self.calculate_visibility()
 
         self.rise_azimuth = self.calculate_az(self.target, self.location, self.rise_time)
-        self.rise_ha = self.calculate_ha(self.target, self.location, self.rise_time)
+        self.rise_ha = self.calculate_ha(self.target, self.location, self.rise_time).to(u.hourangle)
 
         self.set_azimuth = self.calculate_az(self.target, self.location, self.set_time)
-        self.set_ha = self.calculate_ha(self.target, self.location, self.set_time)
+        self.set_ha = self.calculate_ha(self.target, self.location, self.set_time).to(u.hourangle)
 
     def zenith_at_date(self, obstime):
         if not isinstance(obstime, Time):
             raise TypeError("Invalid `obstime` instance. Must be of type `src.time.Time` or `astropy.time.Time`.")
 
-        return self.zenithJ2000.rotate('z', self.sidereal_day(obstime), unit='rad', copy=True)
+        return self.zenithJ2000.rotate('z', self.sidereal_day(obstime), copy=True)
 
     def sidereal_day(self, obstime, epoch_time=None):
         if not isinstance(obstime, Time):
@@ -109,7 +111,7 @@ class Observation:
         if not isinstance(obstime, Time):
             raise TypeError("Invalid `obstime` instance. Must be of type `src.time.Time` or `astropy.time.Time`.")
 
-        return (eq2000.GMST.deg + self.sidereal_day(obstime).to(u.deg) + location.lon) % (360*u.deg)
+        return (Equinox2000.GMST.deg + self.sidereal_day(obstime).to(u.deg) + location.lon) % (360 * u.deg)
 
     def calculate_ha(self, target, location, obstime):
         if not isinstance(target, SkyLocation):
@@ -119,7 +121,7 @@ class Observation:
         if not isinstance(obstime, Time):
             raise TypeError("Invalid `obstime` instance. Must be of type `src.time.Time` or `astropy.time.Time`.")
 
-        return ((self.lst(location, obstime).to(u.deg) - target.ra) % (360 * u.deg)) * (24 * u.hour) / (360 * u.deg)
+        return (self.lst(location, obstime).to(u.deg) - target.ra) % (360 * u.deg)
 
     def calculate_az(self, target, location, obstime):
         if not isinstance(target, SkyLocation):
@@ -159,9 +161,11 @@ class Observation:
         if self.target.dec * self.location.lat <= 0 and abs(self.target.dec) >= abs(self.location.lat):
             return None
         else:
-            time = (Tsidday/(2*np.pi)) * (self.target.ra.rad - eq2000.GMST.rad - self.location.lon.rad)\
-                   % (2*np.pi*u.rad) + self.target.epoch + obstime
-            return time
+            time = (Tsidday.value/(2*np.pi)) * (self.target.ra - Equinox2000.GMST.rad - self.location.lon).rad * u.day
+            if time >= 0:
+                return time + obstime
+            else:
+                return time + obstime + 1 * u.day
 
     def calculate_set_time(self, obstime):
         if not isinstance(obstime, Time):
@@ -208,7 +212,7 @@ class Observation:
 
         for t in times:
             t_zenith = self.zenith_at_date(t)
-            tgt = self.target.observe_at_date(t, copy=True)
+            tgt = self.target.precession_at_date(t, copy=True)
 
             alt[index] = self.calculate_alt(t_zenith, tgt)
             az[index] = self.calculate_az(tgt, self.location, t)
