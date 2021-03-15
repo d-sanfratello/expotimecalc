@@ -92,18 +92,43 @@ class Observation:
         self.set_ha = self.calculate_ha(self.target, self.location, self.set_time)
 
     def zenith_at_date(self, obstime):
+        if not isinstance(obstime, Time):
+            raise TypeError("Invalid `obstime` instance. Must be of type `src.time.Time` or `astropy.time.Time`.")
+
         return self.zenithJ2000.rotate('z', self.sidereal_day(obstime), unit='rad', copy=True)
 
     def sidereal_day(self, obstime, epoch_time=None):
+        if not isinstance(obstime, Time):
+            raise TypeError("Invalid `obstime` instance. Must be of type `src.time.Time` or `astropy.time.Time`.")
+
         return ((2*np.pi/Tsidday.value) * (obstime - self.target.epoch).jd) % (2*np.pi) * u.rad
 
     def lst(self, location, obstime):
+        if not isinstance(location, Location):
+            raise TypeError("Invalid `location` instance. Must be of type `src.location.Location`.")
+        if not isinstance(obstime, Time):
+            raise TypeError("Invalid `obstime` instance. Must be of type `src.time.Time` or `astropy.time.Time`.")
+
         return (eq2000.GMST.deg + self.sidereal_day(obstime).to(u.deg) + location.lon) % (360*u.deg)
 
     def calculate_ha(self, target, location, obstime):
+        if not isinstance(target, SkyLocation):
+            raise TypeError("Invalid `target` instance. Must be of type `src.skylocation.SkyLocation`.")
+        if not isinstance(location, Location):
+            raise TypeError("Invalid `location` instance. Must be of type `src.location.Location`.")
+        if not isinstance(obstime, Time):
+            raise TypeError("Invalid `obstime` instance. Must be of type `src.time.Time` or `astropy.time.Time`.")
+
         return ((self.lst(location, obstime).to(u.deg) - target.ra) % (360 * u.deg)) * (24 * u.hour) / (360 * u.deg)
 
     def calculate_az(self, target, location, obstime):
+        if not isinstance(target, SkyLocation):
+            raise TypeError("Invalid `target` instance. Must be of type `src.skylocation.SkyLocation`.")
+        if not isinstance(location, Location):
+            raise TypeError("Invalid `location` instance. Must be of type `src.location.Location`.")
+        if not isinstance(obstime, Time):
+            raise TypeError("Invalid `obstime` instance. Must be of type `src.time.Time` or `astropy.time.Time`.")
+
         return (self.calculate_ha(target, location, obstime) - 180 * u.deg) % (360*u.deg)
 
     def calculate_alt(self, zenith='default', target='default'):
@@ -128,6 +153,9 @@ class Observation:
             return (90 - np.rad2deg(np.arccos(ps))) % -90 * u.deg
 
     def calculate_culmination(self, obstime, epoch_time=None):
+        if not isinstance(obstime, Time):
+            raise TypeError("Invalid `obstime` instance. Must be of type `src.time.Time` or `astropy.time.Time`.")
+
         if self.target.dec * self.location.lat <= 0 and abs(self.target.dec) >= abs(self.location.lat):
             return None
         else:
@@ -136,6 +164,9 @@ class Observation:
             return time
 
     def calculate_set_time(self, obstime):
+        if not isinstance(obstime, Time):
+            raise TypeError("Invalid `obstime` instance. Must be of type `src.time.Time` or `astropy.time.Time`.")
+
         if self.target.dec >= self.location.lat or self.target.dec <= -self.location.lat:
             return None
 
@@ -143,6 +174,9 @@ class Observation:
         return culm_t + Tsidday.to(u.hour)/(2*np.pi) * np.arccos(-np.tan(self.target.ra) * np.tan(self.location.lat))
 
     def calculate_rise_time(self, obstime):
+        if not isinstance(obstime, Time):
+            raise TypeError("Invalid `obstime` instance. Must be of type `src.time.Time` or `astropy.time.Time`.")
+
         if self.target.dec >= self.location.lat or self.target.dec <= -self.location.lat:
             return None
 
