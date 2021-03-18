@@ -22,9 +22,9 @@ class Sun(SkyLocation):
         else:
             self.obstime = Time(obstime).utc
 
-        vector_obstime = self.vector_epoch.rotate_inv('x', self.nutation_corr(self.obstime), copy=True)\
+        vector_obstime = self.vector_epoch.rotate('x', self.nutation_corr(self.obstime), copy=True)\
             .rotate('z', self.sidereal_year(self.obstime), copy=True)\
-            .rotate('x', self.nutation_corr(self.obstime), copy=True)
+            .rotate_inv('x', self.nutation_corr(self.obstime), copy=True)
 
         if copy:
             return vector_obstime
