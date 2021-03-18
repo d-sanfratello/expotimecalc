@@ -36,7 +36,8 @@ class Observation:
         self.sun = Sun(self.obstime)
 
         self.zenithJ2000 = Versor(ra=0., dec=self.location.lat.rad, unit='rad')\
-            .rotate('z', self.sidereal_day(self.target.epoch) + Equinox2000.GMST.rad + self.location.lon, unit='rad')
+            .rotate('z', self.sidereal_day(self.target.epoch) + Equinox2000.GMST.rad + self.location.lon, unit='rad',
+                    copy=True)
 
         self.zenith = None
 
@@ -77,21 +78,21 @@ class Observation:
             self.airmass = 1 / ps
         else:
             self.airmass = 0
-        warnings.warn("Airmass is calculated for a uniform, plane-parallel atmosphere. "
+        warnings.warn("Airmass is calculated for a uniform, plane-parallel atmosphere. " +
                       "Hence, airmass value is just an upper limit at lower and lower altitudes above the horizon.")
 
-        self.culmination = self.calculate_culmination(obstime)
+        # self.culmination = self.calculate_culmination(obstime)
+        #
+        # self.set_time = self.calculate_set_time(obstime)
+        # self.rise_time = self.calculate_rise_time(obstime)
 
-        self.set_time = self.calculate_set_time(obstime)
-        self.rise_time = self.calculate_rise_time(obstime)
-
-        self.visibility = self.calculate_visibility()
-
-        self.rise_azimuth = self.calculate_az(self.target, self.location, self.rise_time)
-        self.rise_ha = self.calculate_ha(self.target, self.location, self.rise_time).to(u.hourangle)
-
-        self.set_azimuth = self.calculate_az(self.target, self.location, self.set_time)
-        self.set_ha = self.calculate_ha(self.target, self.location, self.set_time).to(u.hourangle)
+        # self.visibility = self.calculate_visibility()
+        #
+        # self.rise_azimuth = self.calculate_az(self.target, self.location, self.rise_time)
+        # self.rise_ha = self.calculate_ha(self.target, self.location, self.rise_time).to(u.hourangle)
+        #
+        # self.set_azimuth = self.calculate_az(self.target, self.location, self.set_time)
+        # self.set_ha = self.calculate_ha(self.target, self.location, self.set_time).to(u.hourangle)
 
     def zenith_at_date(self, obstime):
         if not isinstance(obstime, Time):
@@ -175,7 +176,7 @@ class Observation:
             return None
 
         culm_t = self.calculate_culmination(obstime)
-        return culm_t + Tsidday.to(u.hour)/(2*np.pi) * np.arccos(-np.tan(self.target.ra) * np.tan(self.location.lat))
+        return culm_t + Tsidday.to(u.h)/(2*np.pi) * np.arccos(-np.tan(self.target.ra.rad)*np.tan(self.location.lat.rad))
 
     def calculate_rise_time(self, obstime):
         if not isinstance(obstime, Time):
@@ -185,7 +186,7 @@ class Observation:
             return None
 
         culm_t = self.calculate_culmination(obstime)
-        return culm_t - Tsidday.to(u.hour)/(2*np.pi) * np.arccos(-np.tan(self.target.ra) * np.tan(self.location.lat))
+        return culm_t - Tsidday.to(u.h)/(2*np.pi) * np.arccos(-np.tan(self.target.ra.rad)*np.tan(self.location.lat.rad))
 
     def calculate_visibility(self):
         warnings.warn("At the moment this method does not take into account the Sun's position.")
