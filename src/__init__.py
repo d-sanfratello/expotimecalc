@@ -9,7 +9,7 @@ from .time import Time
 
 Tsidday = (23.9345 * u.hour).to(u.day)
 Tsidyear = 365.256363004 * u.day  # https://hpiers.obspm.fr/eop-pc/models/constants.html
-Tprec = (26000 * u.year).to(u.day)
+Tprec = 26000 * Tsidyear
 tJ2000 = Time('J2000.0')
 
 
@@ -41,8 +41,8 @@ def dms2deg(dms):
     sec = sec[:-1]
 
     deg = float(deg) * u.deg
-    mins = float(mins) / 60 * u.arcmin
-    sec = float(sec) / 3600 * u.arcsec
+    mins = float(mins) * u.arcmin
+    sec = float(sec) * u.arcsec
 
     if deg.value >= 0:
         return deg + mins + sec
