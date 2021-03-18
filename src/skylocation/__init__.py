@@ -80,9 +80,9 @@ class SkyLocation(Location):
         self.epoch = Time(epoch).utc
 
         # defined for J2000. Needs revision for other epochs
-        self.vector_epoch = self.vector_epoch.rotate_inv('x', self.nutation_corr(self.obstime))\
-            .rotate_inv('z', self.equinox_prec_corr(self.obstime))\
-            .rotate('x', self.nutation_corr(self.obstime))
+        self.vector_epoch = self.vector_epoch.rotate_inv('x', self.nutation_corr(self.obstime), copy=True)\
+            .rotate_inv('z', self.equinox_prec_corr(self.obstime), copy=True)\
+            .rotate('x', self.nutation_corr(self.obstime), copy=True)
 
     def precession_at_date(self, obstime, copy=True):
         if isinstance(obstime, Time):
@@ -90,9 +90,9 @@ class SkyLocation(Location):
         else:
             self.obstime = Time(obstime).utc
 
-        vector_obstime = self.vector_epoch.rotate_inv('x', self.nutation_corr(self.obstime), copy=True)\
+        vector_obstime = self.vector_epoch.rotate('x', self.nutation_corr(self.obstime), copy=True)\
             .rotate('z', self.equinox_prec_corr(self.obstime), copy=True)\
-            .rotate('x', self.nutation_corr(self.obstime), copy=True)
+            .rotate_inv('x', self.nutation_corr(self.obstime), copy=True)
 
         if copy:
             return vector_obstime
@@ -131,7 +131,7 @@ class SkyLocation(Location):
 
     @staticmethod
     def equinox_prec_corr(obstime):
-        return ((2*np.pi/Tprec.value) * (obstime - tJ2000).jd) % (2*np.pi) * u.rad
+        return - ((2*np.pi/Tprec.value) * (obstime - tJ2000).jd) % (2*np.pi) * u.rad
 
     @staticmethod
     def nutation_corr(obstime):
