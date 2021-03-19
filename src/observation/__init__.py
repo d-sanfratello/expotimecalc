@@ -35,9 +35,9 @@ class Observation:
         self.target = target
         self.sun = Sun(self.obstime)
 
-        self.zenithJ2000 = Versor(ra=0., dec=self.location.lat.rad, unit='rad')\
-            .rotate('z', self.sidereal_day(self.target.epoch) + Equinox2000.GMST.rad + self.location.lon, unit='rad',
-                    copy=True)
+        self.zenithJ2000 = Versor(ra=self.lst(self.location, Equinox2000.time).rad,
+                                  dec=self.location.lat.rad,
+                                  unit='rad')
 
         self.zenith = None
 
@@ -104,7 +104,7 @@ class Observation:
         if not isinstance(obstime, Time):
             raise TypeError("Invalid `obstime` instance. Must be of type `src.time.Time` or `astropy.time.Time`.")
 
-        return ((2*np.pi/Tsidday.value) * (obstime - self.target.epoch).jd) % (2*np.pi) * u.rad
+        return ((2*np.pi/Tsidday.value) * (obstime - Equinox2000.time).jd) % (2*np.pi) * u.rad
 
     def lst(self, location, obstime):
         if not isinstance(location, Location):
@@ -112,7 +112,8 @@ class Observation:
         if not isinstance(obstime, Time):
             raise TypeError("Invalid `obstime` instance. Must be of type `src.time.Time` or `astropy.time.Time`.")
 
-        return (Equinox2000.GMST.deg + self.sidereal_day(obstime).to(u.deg) + location.lon) % (360 * u.deg)
+        shift = Equinox2000.GMST.deg + self.sidereal_day(obstime).to(u.deg) + location.lon
+        return shift.to(u.hourangle) % (24 * u.hourangle)
 
     def calculate_ha(self, target, location, obstime):
         if not isinstance(target, SkyLocation):
@@ -122,7 +123,7 @@ class Observation:
         if not isinstance(obstime, Time):
             raise TypeError("Invalid `obstime` instance. Must be of type `src.time.Time` or `astropy.time.Time`.")
 
-        return (self.lst(location, obstime).to(u.deg) - target.ra) % (360 * u.deg)
+        return (self.lst(location, obstime) - target.ra).to(u.hourangle) % (24 * u.hourangle)
 
     def calculate_az(self, target, location, obstime):
         if not isinstance(target, SkyLocation):
@@ -132,7 +133,7 @@ class Observation:
         if not isinstance(obstime, Time):
             raise TypeError("Invalid `obstime` instance. Must be of type `src.time.Time` or `astropy.time.Time`.")
 
-        return (self.calculate_ha(target, location, obstime) - 180 * u.deg) % (360*u.deg)
+        return (self.calculate_ha(target, location, obstime).to(u.deg) - 180 * u.deg) % (360*u.deg)
 
     def calculate_alt(self, zenith='default', target='default'):
         if zenith != 'default' and not isinstance(zenith, Versor):
