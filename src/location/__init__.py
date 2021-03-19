@@ -10,9 +10,9 @@ class Location:
 
     @classmethod
     def parse_string(cls, coord_string, coord_letter_pos, coord_letter_neg):
-        if _ := coord_string.lower().find(coord_letter_pos.lower()) >= 0:
+        if (_ := coord_string.lower().find(coord_letter_pos.lower())) >= 0:
             return dms2deg(coord_string[:_])
-        elif _ := coord_string.lower().find(coord_letter_neg.lower()) >= 0:
+        elif (_ := coord_string.lower().find(coord_letter_neg.lower())) >= 0:
             return -dms2deg(coord_string[:_])
         else:
             return float(coord_string)
