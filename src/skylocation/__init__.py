@@ -131,7 +131,7 @@ class SkyLocation(Location):
 
     @staticmethod
     def equinox_prec_corr(obstime):
-        return - ((2*np.pi/Tprec.value) * (obstime - tJ2000).jd) % (2*np.pi) * u.rad
+        return ((2*np.pi/Tprec.value) * (obstime - tJ2000).jd) % (2*np.pi) * u.rad
 
     @staticmethod
     def nutation_corr(obstime):
