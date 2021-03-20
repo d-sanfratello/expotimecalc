@@ -131,11 +131,18 @@ class SkyLocation(Location):
 
     @staticmethod
     def equinox_prec_corr(obstime):
+        if not isinstance(obstime, Time):
+            raise TypeError("Invalid `obstime` instance. Must be of type `src.time.Time` or `astropy.time.Time`.")
+
         return ((2*np.pi/Tprec.value) * (obstime - tJ2000).jd) % (2*np.pi) * u.rad
 
     @staticmethod
     def nutation_corr(obstime):
+        if not isinstance(obstime, Time):
+            raise TypeError("Invalid `obstime` instance. Must be of type `src.time.Time` or `astropy.time.Time`.")
+
         # check for Earth Fact Sheet at https://nssdc.gsfc.nasa.gov/planetary/factsheet/earthfact.html
         return 23.44 * u.deg
+
 
 import src.skylocation.sun
