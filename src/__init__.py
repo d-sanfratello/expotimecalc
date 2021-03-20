@@ -145,6 +145,8 @@ class Versor:
         r_mat = RotationMatrix(axis, angle, unit)
         vsr = r_mat.mat.dot(self.vsr)
 
+        vsr /= vsr.sum()
+
         if copy:
             return Versor(vector=vsr)
         else:
@@ -154,6 +156,8 @@ class Versor:
     def rotate_inv(self, axis, angle, unit='rad', copy=False):
         r_mat = RotationMatrix(axis, angle, unit)
         vsr = r_mat.inv.dot(self.vsr)
+
+        vsr /= vsr.sum()
 
         if copy:
             return Versor(vector=vsr)
