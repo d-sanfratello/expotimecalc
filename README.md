@@ -15,6 +15,7 @@ planning of observations.
   `numpy 1.19`, due to some bugs in their external requirements. More info about this should be
   found in the `issues` page on `numpy`'s repository. Again, see `numpy`'s website for the
   installation instructions.
+* `skyfield 1.37`: For ephemeris data.
 
 ## Usage
 To run the program, you just need to call `python main.py` inside your terminal. A set of

@@ -1,8 +1,12 @@
 import numpy as np
 
 from astropy import units as u
+from astropy.coordinates import EarthLocation
 from astropy.coordinates.angles import Latitude
 from astropy.coordinates.angles import Longitude
+
+from skyfield import api
+from skyfield import almanac
 
 from src.time import Time
 
@@ -65,33 +69,53 @@ def open_loc_file(obs_path, tgt_path):
 
 
 class GMSTeq2000:
-    hms = 19 * u.hour + 17 * u.min + 57.3258 * u.s
-    deg = hms2deg(hms)
-    rad = deg.to(u.rad)
+    # hms = 19 * u.hour + 17 * u.min + 57.3258 * u.s
+    # deg = hms2deg(hms)
+    # rad = deg.to(u.rad)
+    def __init__(self, time):
+        if not isinstance(time, Time):
+            raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
+
+        self.hms = self.__set_time(time)
+        self.deg = self.hms.to(u.deg)
+        self.rad = self.hms.to(u.rad)
+
+    @staticmethod
+    def __set_time(time):
+        time.location = EarthLocation.of_site('greenwich')
+        return time.sidereal_time('mean')
 
 
 class Equinox2000:
-    """
-    ssd.jpl.nasa.gov/horizons.cgi
+    # """
+    # ssd.jpl.nasa.gov/horizons.cgi
+    #
+    # [For Equinox time]
+    # ephemType=OBSERVER
+    # Target=Sun
+    # Location=Geocentric
+    # TimeSpan: 2000-03-20 07:25:00 - 2000-03-20 07:26:00, intervals=100
+    # settings=default
+    # display=default (HTML)
+    #
+    # [For GMST at equinox]
+    # ephemType=OBSERVER
+    # Target=Sun
+    # Location=Greenwich [000] ( 0°00'00.0''E, 51°28'38.6''N, 65.8 m )
+    # TimeSpan: 2000-03-20 07:25:00 - 2000-03-20 07:26:00, intervals=100
+    # settings=QUANTITIES=1,7,9,20,23,24
+    # display=default (HTML)
+    # """
+    # time = Time('2000-03-20T07:25:24.600', scale='utc', format='isot')
+    ts = api.load.timescale()
+    eph = api.load('de421.bsp')
+    t0 = ts.utc(2000, 3, 20)
+    t1 = ts.utc(2000, 3, 21)
+    t = almanac.find_discrete(t0, t1, almanac.seasons(eph))[0]
 
-    [For Equinox time]
-    ephemType=OBSERVER
-    Target=Sun
-    Location=Geocentric
-    TimeSpan: 2000-03-20 07:25:00 - 2000-03-20 07:26:00, intervals=100
-    settings=default
-    display=default (HTML)
+    time = Time(t.utc_iso()[0][:-1], scale='utc')
 
-    [For GMST at equinox]
-    ephemType=OBSERVER
-    Target=Sun
-    Location=Greenwich [000] ( 0°00'00.0''E, 51°28'38.6''N, 65.8 m )
-    TimeSpan: 2000-03-20 07:25:00 - 2000-03-20 07:26:00, intervals=100
-    settings=QUANTITIES=1,7,9,20,23,24
-    display=default (HTML)
-    """
-    time = Time('2000-03-20T07:25:24.600', scale='utc', format='isot')
-    GMST = GMSTeq2000
+    GMST = GMSTeq2000(time)
     hour = time.jd % 1
     rad = 2 * np.pi * hour
 
