@@ -15,6 +15,9 @@ from src import dms2deg
 from src import Tprec
 from src import tJ2000
 
+from src import errmsg
+from src import warnmsg
+
 
 class SkyLocation(Location):
     epoch_names = {'J2000': 'J'}
@@ -37,7 +40,7 @@ class SkyLocation(Location):
             elif ra_unit == 'rad':
                 ra = np.rad2deg(ra)
             else:
-                raise ValueError("Unknown unit of measure in Right Ascension.")
+                raise ValueError(errmsg.invalidUnitError)
 
             if isinstance(dec, str) and dec.lower().find("d") >= 0:
                 dec = dms2deg(dec)
@@ -48,12 +51,12 @@ class SkyLocation(Location):
             elif dec_unit == 'rad':
                 dec = np.rad2deg(dec)
             else:
-                raise ValueError("Unknown unit of measure in Declination.")
+                raise ValueError(errmsg.invalidUnitError)
         else:
-            raise ValueError("Must select at least one between `locstring` and the `ra`-`dec` couple.")
+            raise ValueError(errmsg.mustDeclareRaDecError)
 
         if name is not None and not isinstance(name, str):
-            raise TypeError("`name` kwarg must be either `Nonetype` or `string`.")
+            raise TypeError(errmsg.notTwoTypesError.format('name', 'Nonetype', 'string'))
 
         super(SkyLocation, self).__init__(locstring, lat=dec, lon=ra)
 
@@ -75,7 +78,7 @@ class SkyLocation(Location):
 
     def convert_to_epoch(self, epoch='J2000'):
         if epoch not in ['J2000']:
-            raise ValueError("`epoch` is not a valid epoch string.")
+            raise ValueError(errmsg.invalidEpoch)
 
         self.epoch = Time(epoch).utc
 
@@ -132,14 +135,14 @@ class SkyLocation(Location):
     @staticmethod
     def equinox_prec_corr(obstime):
         if not isinstance(obstime, Time):
-            raise TypeError("Invalid `obstime` instance. Must be of type `src.time.Time` or `astropy.time.Time`.")
+            raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
 
         return ((2*np.pi/Tprec.value) * (obstime - tJ2000).jd) % (2*np.pi) * u.rad
 
     @staticmethod
     def nutation_corr(obstime):
         if not isinstance(obstime, Time):
-            raise TypeError("Invalid `obstime` instance. Must be of type `src.time.Time` or `astropy.time.Time`.")
+            raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
 
         # check for Earth Fact Sheet at https://nssdc.gsfc.nasa.gov/planetary/factsheet/earthfact.html
         return 23.44 * u.deg

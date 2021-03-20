@@ -8,6 +8,9 @@ from src.skylocation import SkyLocation
 from src import Tsidyear
 from src import tJ2000
 
+from src import errmsg
+from src import warnmsg
+
 
 class Sun(SkyLocation):
     def __init__(self, obstime):
@@ -18,7 +21,7 @@ class Sun(SkyLocation):
 
     def observe_at_date(self, obstime, copy=True):
         if not isinstance(obstime, Time):
-            raise TypeError("Invalid `obstime` instance. Must be of type `src.time.Time` or `astropy.time.Time`.")
+            raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
 
         vector_obstime = self.vector_epoch.rotate('x', self.nutation_corr(self.obstime), copy=True)\
             .rotate('z', self.sidereal_year(self.obstime), copy=True)\

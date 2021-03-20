@@ -14,6 +14,9 @@ from src import Versor
 from src import Tsidday
 from src import Equinox2000
 
+from src import errmsg
+from src import warnmsg
+
 import warnings
 
 
@@ -27,11 +30,11 @@ class Observation:
 
     def __init__(self, location, obstime=None, target=None):
         if not isinstance(location, Location):
-            raise TypeError("Must be of type `src.location.Location`.")
+            raise TypeError(errmsg.notTypeError.format('location', 'src.location.Location'))
         if not isinstance(obstime, Time):
-            raise TypeError("Must be of type `src.time.Time` or `astropy.time.Time`.")
+            raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
         if not isinstance(target, SkyLocation):
-            raise TypeError("Must be of type `src.skylocation.SkyLocation`.")
+            raise TypeError(errmsg.notTypeError.format('target', 'src.skylocation.SkyLocation'))
 
         self.location = location
         self.obstime = obstime
@@ -64,7 +67,7 @@ class Observation:
 
     def make_observation(self, obstime):
         if not isinstance(obstime, Time):
-            raise TypeError("Must be of type `src.time.Time` or `astropy.time.Time`.")
+            raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
 
         self.obstime = obstime
 
@@ -81,9 +84,7 @@ class Observation:
             self.airmass = 1 / ps
         else:
             self.airmass = 0
-        warn_msg = "\nAirmass is calculated for a uniform, plane-parallel atmosphere."
-        warn_msg += " Hence, airmass value is just an upper limit at lower and lower altitudes above the horizon."
-        warnings.warn(warn_msg)
+        warnings.warn(warnmsg.airmassWarning)
 
         self.culmination = self.calculate_culmination(self.target, self.location, self.obstime)
 
@@ -100,16 +101,16 @@ class Observation:
 
     def zenith_at_date(self, obstime):
         if not isinstance(obstime, Time):
-            raise TypeError("Invalid `obstime` instance. Must be of type `src.time.Time` or `astropy.time.Time`.")
+            raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
 
         return self.zenithJ2000.rotate('z', self.sidereal_day(obstime), copy=True)
 
     @classmethod
     def sidereal_day(cls, obstime, epoch_eq='equinoxJ2000'):
         if not isinstance(obstime, Time):
-            raise TypeError("Invalid `obstime` instance. Must be of type `src.time.Time` or `astropy.time.Time`.")
+            raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
         if epoch_eq != 'equinoxJ2000':
-            raise NotImplementedError("This parameter has not been implemented yet, as other epochs are not available.")
+            raise NotImplementedError(errmsg.epochNotImplemented)
 
         reference = cls.equinoxes[epoch_eq]
 
@@ -118,9 +119,9 @@ class Observation:
     @classmethod
     def lst(cls, location, obstime):
         if not isinstance(location, Location):
-            raise TypeError("Invalid `location` instance. Must be of type `src.location.Location`.")
+            raise TypeError(errmsg.notTypeError.format('location', 'src.location.Location'))
         if not isinstance(obstime, Time):
-            raise TypeError("Invalid `obstime` instance. Must be of type `src.time.Time` or `astropy.time.Time`.")
+            raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
 
         shift = Equinox2000.GMST.deg + cls.sidereal_day(obstime).to(u.deg) + location.lon
         return shift.to(u.hourangle) % (24 * u.hourangle)
@@ -128,31 +129,31 @@ class Observation:
     @classmethod
     def calculate_ha(cls, target, location, obstime):
         if not isinstance(target, SkyLocation):
-            raise TypeError("Invalid `target` instance. Must be of type `src.skylocation.SkyLocation`.")
+            raise TypeError(errmsg.notTypeError.format('target', 'src.skylocation.SkyLocation'))
         if not isinstance(location, Location):
-            raise TypeError("Invalid `location` instance. Must be of type `src.location.Location`.")
+            raise TypeError(errmsg.notTypeError.format('location', 'src.location.Location'))
         if not isinstance(obstime, Time):
-            raise TypeError("Invalid `obstime` instance. Must be of type `src.time.Time` or `astropy.time.Time`.")
+            raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
 
         return (cls.lst(location, obstime) - target.ra).to(u.hourangle) % (24 * u.hourangle)
 
     @classmethod
     def calculate_az(cls, target, location, obstime):
         if not isinstance(target, SkyLocation):
-            raise TypeError("Invalid `target` instance. Must be of type `src.skylocation.SkyLocation`.")
+            raise TypeError(errmsg.notTypeError.format('target', 'src.skylocation.SkyLocation'))
         if not isinstance(location, Location):
-            raise TypeError("Invalid `location` instance. Must be of type `src.location.Location`.")
+            raise TypeError(errmsg.notTypeError.format('location', 'src.location.Location'))
         if not isinstance(obstime, Time):
-            raise TypeError("Invalid `obstime` instance. Must be of type `src.time.Time` or `astropy.time.Time`.")
+            raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
 
         return (cls.calculate_ha(target, location, obstime).to(u.deg) - 180 * u.deg) % (360*u.deg)
 
     @classmethod
     def calculate_alt(cls, target, zenith):
         if not isinstance(target, SkyLocation):
-            raise TypeError("Invalid `target` instance. Must be of type `src.skylocation.SkyLocation`.")
+            raise TypeError(errmsg.notTypeError.format('target', 'src.skylocation.SkyLocation'))
         if not isinstance(zenith, Versor):
-            raise TypeError("Invalid zenith.")
+            raise TypeError(errmsg.notTypeError.format('zenith', 'src.Versor'))
 
         target_vsr = target.vector_obstime.vsr
         zenith_vsr = zenith.vsr
@@ -165,13 +166,13 @@ class Observation:
     @classmethod
     def calculate_culmination(cls, target, location, obstime, epoch_eq='equinoxJ2000'):
         if not isinstance(target, SkyLocation):
-            raise TypeError("Invalid `target` instance. Must be of type `src.skylocation.SkyLocation`.")
+            raise TypeError(errmsg.notTypeError.format('target', 'src.skylocation.SkyLocation'))
         if not isinstance(location, Location):
-            raise TypeError("Invalid `location` instance. Must be of type `src.location.Location`.")
+            raise TypeError(errmsg.notTypeError.format('location', 'src.location.Location'))
         if not isinstance(obstime, Time):
-            raise TypeError("Invalid `obstime` instance. Must be of type `src.time.Time` or `astropy.time.Time`.")
+            raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
         if epoch_eq != 'equinoxJ2000':
-            raise NotImplementedError("This parameter has not been implemented yet, as other epochs are not available.")
+            raise NotImplementedError(errmsg.epochNotImplemented)
 
         reference = cls.equinoxes[epoch_eq]
 
@@ -187,11 +188,11 @@ class Observation:
     @classmethod
     def calculate_set_time(cls, target, location, obstime):
         if not isinstance(target, SkyLocation):
-            raise TypeError("Invalid `target` instance. Must be of type `src.skylocation.SkyLocation`.")
+            raise TypeError(errmsg.notTypeError.format('target', 'src.skylocation.SkyLocation'))
         if not isinstance(location, Location):
-            raise TypeError("Invalid `location` instance. Must be of type `src.location.Location`.")
+            raise TypeError(errmsg.notTypeError.format('location', 'src.location.Location'))
         if not isinstance(obstime, Time):
-            raise TypeError("Invalid `obstime` instance. Must be of type `src.time.Time` or `astropy.time.Time`.")
+            raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
 
         if target.dec >= location.lat or target.dec <= -location.lat:
             return None
@@ -203,11 +204,11 @@ class Observation:
     @classmethod
     def calculate_rise_time(cls, target, location, obstime):
         if not isinstance(target, SkyLocation):
-            raise TypeError("Invalid `target` instance. Must be of type `src.skylocation.SkyLocation`.")
+            raise TypeError(errmsg.notTypeError.format('target', 'src.skylocation.SkyLocation'))
         if not isinstance(location, Location):
-            raise TypeError("Invalid `location` instance. Must be of type `src.location.Location`.")
+            raise TypeError(errmsg.notTypeError.format('location', 'src.location.Location'))
         if not isinstance(obstime, Time):
-            raise TypeError("Invalid `obstime` instance. Must be of type `src.time.Time` or `astropy.time.Time`.")
+            raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
 
         if target.dec >= location.lat or target.dec <= -location.lat:
             return None
@@ -219,10 +220,10 @@ class Observation:
     @classmethod
     def calculate_visibility(cls, target, location):
         if not isinstance(target, SkyLocation):
-            raise TypeError("Invalid `target` instance. Must be of type `src.skylocation.SkyLocation`.")
+            raise TypeError(errmsg.notTypeError.format('target', 'src.skylocation.SkyLocation'))
         if not isinstance(location, Location):
-            raise TypeError("Invalid `location` instance. Must be of type `src.location.Location`.")
-        warnings.warn("\nAt the moment `calculate_visibility` method does not take into account the Sun's position.")
+            raise TypeError(errmsg.notTypeError.format('location', 'src.location.Location'))
+        warnings.warn(warnmsg.visibilityWarning)
 
         if abs(target.dec) >= abs(location.lat):
             if target.dec * location.lat > 0:

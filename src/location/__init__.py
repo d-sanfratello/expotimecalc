@@ -4,6 +4,9 @@ from astropy.units.quantity import Quantity
 
 from src import dms2deg
 
+from src import errmsg
+from src import warnmsg
+
 
 class Location:
     valid_coord_types = (int, float, str, Latitude, Longitude, Quantity)
@@ -19,16 +22,16 @@ class Location:
 
     def __init__(self, locstring=None, lat=None, lon=None):
         if locstring is None and (lat is None and lon is None):
-            raise ValueError("Must declare location of observatory.")
+            raise ValueError(errmsg.mustDeclareLocation)
         elif locstring is None and (lat is None or lon is None):
-            raise ValueError("Must declare both latitude and longitude.")
+            raise ValueError(errmsg.mustDeclareLatLonError)
 
         if locstring is not None:
             if not isinstance(locstring, str):
-                raise TypeError("locstring must be of string type.")
+                raise TypeError(errmsg.notTypeError.format('locstring', 'string'))
         else:
             if not isinstance(lat, self.valid_coord_types) or not isinstance(lon, self.valid_coord_types):
-                raise TypeError("`lat` or `lon` attributes are of wrong type.")
+                raise TypeError(errmsg.latLonWrongTypeError)
 
         if lat is None and lon is None:
             lat, lon = locstring.split()
@@ -42,7 +45,7 @@ class Location:
         elif isinstance(lat, Quantity):
             lat = Latitude(lat)
         else:
-            raise TypeError("`lat` cannot be of type `Longitude`.")
+            raise TypeError(errmsg.latNotLonError)
 
         if isinstance(lon, str):
             lon = Longitude(type(self).parse_string(lon, 'E', 'W'), unit='deg')
@@ -53,7 +56,7 @@ class Location:
         elif isinstance(lon, Quantity):
             lon = Longitude(lon)
         else:
-            raise TypeError("`lon` cannot be of type `Latitude`.")
+            raise TypeError(errmsg.lonNotLatError)
 
         self.lat = lat
         self.lon = lon

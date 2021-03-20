@@ -4,7 +4,10 @@ from astropy import units as u
 from astropy.coordinates.angles import Latitude
 from astropy.coordinates.angles import Longitude
 
-from .time import Time
+from src.time import Time
+
+import src.warnmsg as warnmsg
+import src.errmsg as errmsg
 
 
 Tsidday = (23.9345 * u.hour).to(u.day)
@@ -34,7 +37,7 @@ def hms2deg(hms):
 
 def dms2deg(dms):
     if not isinstance(dms, str):
-        raise TypeError("`dms` must be a string.")
+        raise TypeError(errmsg.notTypeError.format('dms', 'string'))
 
     deg, minsec = dms.lower().split('d')
     mins, sec = minsec.lower().split('m')
@@ -95,14 +98,14 @@ class Equinox2000:
 class Versor:
     def __init__(self, ra=None, dec=None, vector=None, unit=None):
         if (ra is None and dec is None) and vector is None:
-            raise ValueError("Must give either a set of coordinates or a ra-dec position.")
+            raise ValueError(errmsg.versorError)
 
         if vector is None:
             if not isinstance(ra, u.quantity.Quantity) and not isinstance(dec, u.quantity.Quantity):
                 if unit is None:
-                    raise ValueError("Must specify the unit of measure.")
+                    raise ValueError(errmsg.specifyUnitError)
                 elif unit not in ['deg', 'rad', 'hmsdms']:
-                    raise ValueError("Must use a valid unit of measure.")
+                    raise ValueError(errmsg.invalidUnitError)
 
         if ra is not None and dec is not None:
             if unit == 'deg':
@@ -162,10 +165,10 @@ class Versor:
 class RotationMatrix:
     def __init__(self, axis, angle, unit='deg'):
         if axis.lower() not in ['x', 'y', 'z']:
-            raise ValueError("Not a valid rotation axis.")
+            raise ValueError(errmsg.invalidAxisError)
         if unit not in ['deg', 'rad'] and\
                 (not isinstance(angle, u.quantity.Quantity) and angle.unit not in ['deg', 'rad']):
-            raise ValueError("Unknown angle unit.")
+            raise ValueError(errmsg.invalidUnitError)
 
         if isinstance(angle, u.quantity.Quantity):
             unit = angle.unit
@@ -199,7 +202,7 @@ class RotationMatrix:
                              [np.sin(angle),  np.cos(angle), 0],
                              [             0,             0, 1]], dtype=np.float64)
         else:
-            raise ValueError("Invalid axis")
+            raise ValueError(errmsg.invalidAxisError)
 
 
 import src.location
@@ -207,3 +210,5 @@ import src.observation
 import src.time
 import src.skylocation
 import src.skylocation.sun
+import src.errmsg
+import src.warnmsg
