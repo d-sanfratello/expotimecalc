@@ -3,7 +3,7 @@ invalidEpoch = "`epoch` is not a valid epoch."
 
 # Type errors
 notTwoTypesError = "`{}` must be either `{}` or `{}`."
-notTypeError = "`{}` must be of type {}."
+notTypeError = "`{}` must be of type `{}`."
 latLonWrongTypeError = "`lat` or `lon` attributes are of wrong type."
 latNotLonError = "`lat` cannot be of type `Longitude`."
 lonNotLatError = "`lon` cannot be of type `Latitude`."
