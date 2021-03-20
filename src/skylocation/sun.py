@@ -27,7 +27,7 @@ class Sun(SkyLocation):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
 
         vector_obstime = self.vector_epoch.rotate('x', self.nutation_corr(self.obstime), copy=True)\
-            .rotate('z', self.sidereal_year(self.obstime), copy=True)\
+            .rotate('z', self.sidereal_year_rotation(self.obstime), copy=True)\
             .rotate_inv('x', self.nutation_corr(self.obstime), copy=True)
 
         if copy:
@@ -36,7 +36,7 @@ class Sun(SkyLocation):
             self.vector_obstime = vector_obstime
 
     @classmethod
-    def sidereal_year(cls, obstime, epoch_eq='equinoxJ2000'):
+    def sidereal_year_rotation(cls, obstime, epoch_eq='equinoxJ2000'):
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
         if epoch_eq != 'equinoxJ2000':

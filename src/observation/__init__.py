@@ -103,10 +103,10 @@ class Observation:
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
 
-        return self.zenithJ2000.rotate('z', self.sidereal_day(obstime), copy=True)
+        return self.zenithJ2000.rotate('z', self.sidereal_day_rotation(obstime), copy=True)
 
     @classmethod
-    def sidereal_day(cls, obstime, epoch_eq='equinoxJ2000'):
+    def sidereal_day_rotation(cls, obstime, epoch_eq='equinoxJ2000'):
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
         if epoch_eq != 'equinoxJ2000':
@@ -123,7 +123,7 @@ class Observation:
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
 
-        shift = Equinox2000.GMST.deg + cls.sidereal_day(obstime).to(u.deg) + location.lon
+        shift = Equinox2000.GMST.deg + cls.sidereal_day_rotation(obstime).to(u.deg) + location.lon
         return shift.to(u.hourangle) % (24 * u.hourangle)
 
     @classmethod
