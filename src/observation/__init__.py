@@ -12,6 +12,7 @@ from src.time import Time
 from src import Versor
 
 from src import Tsidday
+from src import sidday_diff
 from src import Equinox2000
 
 from src import errmsg
@@ -114,7 +115,7 @@ class Observation:
 
         reference = cls.equinoxes[epoch_eq]
 
-        return ((2 * np.pi * u.rad / Tsidday.value) * (obstime - reference.time).jd)  # % (2*np.pi)
+        return ((2 * np.pi * u.rad / Tsidday.value) * (obstime - reference.time).jd) % (2 * np.pi * u.rad)
 
     @classmethod
     def lst(cls, location, obstime):
@@ -124,6 +125,8 @@ class Observation:
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
 
         shift = Equinox2000.GMST.deg + cls.sidereal_day_rotation(obstime).to(u.deg) + location.lon
+        # day_fraction = 24 * u.hour * (1 - obstime.mjd % int(obstime.mjd))
+        # shift = obstime + location.timezone + day_fraction * sidday_diff
         return shift.to(u.hourangle) % (24 * u.hourangle)
 
     @classmethod

@@ -1,3 +1,4 @@
+from astropy import units as u
 from astropy.coordinates.angles import Latitude
 from astropy.coordinates.angles import Longitude
 from astropy.units.quantity import Quantity
@@ -20,7 +21,7 @@ class Location:
         else:
             return float(coord_string)
 
-    def __init__(self, locstring=None, lat=None, lon=None):
+    def __init__(self, locstring=None, lat=None, lon=None, timezone=None):
         if locstring is None and (lat is None and lon is None):
             raise ValueError(errmsg.mustDeclareLocation)
         elif locstring is None and (lat is None or lon is None):
@@ -32,6 +33,9 @@ class Location:
         else:
             if not isinstance(lat, self.valid_coord_types) or not isinstance(lon, self.valid_coord_types):
                 raise TypeError(errmsg.latLonWrongTypeError)
+
+        if timezone is not None and not isinstance(timezone, int):
+            raise TypeError(errmsg.notTwoTypesError('timezone', 'Nonetype', 'int'))
 
         if lat is None and lon is None:
             lat, lon = locstring.split()
@@ -60,3 +64,8 @@ class Location:
 
         self.lat = lat
         self.lon = lon
+
+        if timezone is None:
+            self.timezone = 0 * u.hour
+        else:
+            self.timezone = timezone * u.hour

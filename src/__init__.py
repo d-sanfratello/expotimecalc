@@ -14,6 +14,7 @@ Tsidday = (23.9345 * u.hour).to(u.day)
 Tsidyear = 365.256363004 * u.day  # https://hpiers.obspm.fr/eop-pc/models/constants.html
 Tprec = 26000 * Tsidyear
 tJ2000 = Time('J2000.0')
+sidday_diff = 1 * u.day - Tsidday
 
 
 def hms2deg(hms):
