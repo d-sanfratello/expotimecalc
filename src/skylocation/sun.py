@@ -17,10 +17,8 @@ class Sun(SkyLocation):
         self.vector_obstime = self.observe_at_date(obstime, copy=True)
 
     def observe_at_date(self, obstime, copy=True):
-        if isinstance(obstime, Time):
-            self.obstime = obstime.utc
-        else:
-            self.obstime = Time(obstime).utc
+        if not isinstance(obstime, Time):
+            raise TypeError("Invalid `obstime` instance. Must be of type `src.time.Time` or `astropy.time.Time`.")
 
         vector_obstime = self.vector_epoch.rotate('x', self.nutation_corr(self.obstime), copy=True)\
             .rotate('z', self.sidereal_year(self.obstime), copy=True)\
