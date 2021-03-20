@@ -21,7 +21,10 @@ time_support(scale='utc', format='iso', simplify=True)
 quantity_support()
 
 
+# noinspection PyUnresolvedReferences
 class Observation:
+    equinoxes = {'equinoxJ2000': Equinox2000}
+
     def __init__(self, location, obstime=None, target=None):
         if not isinstance(location, Location):
             raise TypeError("Must be of type `src.location.Location`.")
@@ -67,32 +70,33 @@ class Observation:
 
         self.target.precession_at_date(self.obstime, copy=False)
 
-        self.zenith = self.zenith_at_date(obstime)
+        self.zenith = self.zenith_at_date(self.obstime)
 
-        self.target_ha = self.calculate_ha(self.target, self.location, obstime)
-        self.target_azimuth = self.calculate_az(self.target, self.location, obstime)
-        self.target_alt = self.calculate_alt()
+        self.target_ha = self.calculate_ha(self.target, self.location, self.obstime)
+        self.target_azimuth = self.calculate_az(self.target, self.location, self.obstime)
+        self.target_alt = self.calculate_alt(self.target, self.zenith)
 
         if (ps := self.zenith.vsr.dot(self.target.vector_obstime.vsr)) > 0:
             # airmass = sec(z) = 1/cos(z)
             self.airmass = 1 / ps
         else:
             self.airmass = 0
-        warnings.warn("Airmass is calculated for a uniform, plane-parallel atmosphere. " +
-                      "Hence, airmass value is just an upper limit at lower and lower altitudes above the horizon.")
+        warn_msg = "\nAirmass is calculated for a uniform, plane-parallel atmosphere."
+        warn_msg += " Hence, airmass value is just an upper limit at lower and lower altitudes above the horizon."
+        warnings.warn(warn_msg)
 
-        # self.culmination = self.calculate_culmination(obstime)
-        #
-        # self.set_time = self.calculate_set_time(obstime)
-        # self.rise_time = self.calculate_rise_time(obstime)
+        self.culmination = self.calculate_culmination(self.target, self.location, self.obstime)
 
-        # self.visibility = self.calculate_visibility()
-        #
-        # self.rise_azimuth = self.calculate_az(self.target, self.location, self.rise_time)
-        # self.rise_ha = self.calculate_ha(self.target, self.location, self.rise_time).to(u.hourangle)
-        #
-        # self.set_azimuth = self.calculate_az(self.target, self.location, self.set_time)
-        # self.set_ha = self.calculate_ha(self.target, self.location, self.set_time).to(u.hourangle)
+        self.set_time = self.calculate_set_time(self.target, self.location, self.obstime)
+        self.rise_time = self.calculate_rise_time(self.target, self.location, self.obstime)
+
+        self.visibility = self.calculate_visibility(self.target, self.location)
+
+        self.rise_azimuth = self.calculate_az(self.target, self.location, self.rise_time)
+        self.rise_ha = self.calculate_ha(self.target, self.location, self.rise_time).to(u.hourangle)
+
+        self.set_azimuth = self.calculate_az(self.target, self.location, self.set_time)
+        self.set_ha = self.calculate_ha(self.target, self.location, self.set_time).to(u.hourangle)
 
     def zenith_at_date(self, obstime):
         if not isinstance(obstime, Time):
@@ -100,22 +104,29 @@ class Observation:
 
         return self.zenithJ2000.rotate('z', self.sidereal_day(obstime), copy=True)
 
-    def sidereal_day(self, obstime, epoch_time=None):
+    @classmethod
+    def sidereal_day(cls, obstime, epoch_eq='equinoxJ2000'):
         if not isinstance(obstime, Time):
             raise TypeError("Invalid `obstime` instance. Must be of type `src.time.Time` or `astropy.time.Time`.")
+        if epoch_eq != 'equinoxJ2000':
+            raise NotImplementedError("This parameter has not been implemented yet, as other epochs are not available.")
 
-        return ((2*np.pi/Tsidday.value) * (obstime - Equinox2000.time).jd) % (2*np.pi) * u.rad
+        reference = cls.equinoxes[epoch_eq]
 
-    def lst(self, location, obstime):
+        return ((2*np.pi/Tsidday.value) * (obstime - reference.time).jd) % (2*np.pi) * u.rad
+
+    @classmethod
+    def lst(cls, location, obstime):
         if not isinstance(location, Location):
             raise TypeError("Invalid `location` instance. Must be of type `src.location.Location`.")
         if not isinstance(obstime, Time):
             raise TypeError("Invalid `obstime` instance. Must be of type `src.time.Time` or `astropy.time.Time`.")
 
-        shift = Equinox2000.GMST.deg + self.sidereal_day(obstime).to(u.deg) + location.lon
+        shift = Equinox2000.GMST.deg + cls.sidereal_day(obstime).to(u.deg) + location.lon
         return shift.to(u.hourangle) % (24 * u.hourangle)
 
-    def calculate_ha(self, target, location, obstime):
+    @classmethod
+    def calculate_ha(cls, target, location, obstime):
         if not isinstance(target, SkyLocation):
             raise TypeError("Invalid `target` instance. Must be of type `src.skylocation.SkyLocation`.")
         if not isinstance(location, Location):
@@ -123,9 +134,10 @@ class Observation:
         if not isinstance(obstime, Time):
             raise TypeError("Invalid `obstime` instance. Must be of type `src.time.Time` or `astropy.time.Time`.")
 
-        return (self.lst(location, obstime) - target.ra).to(u.hourangle) % (24 * u.hourangle)
+        return (cls.lst(location, obstime) - target.ra).to(u.hourangle) % (24 * u.hourangle)
 
-    def calculate_az(self, target, location, obstime):
+    @classmethod
+    def calculate_az(cls, target, location, obstime):
         if not isinstance(target, SkyLocation):
             raise TypeError("Invalid `target` instance. Must be of type `src.skylocation.SkyLocation`.")
         if not isinstance(location, Location):
@@ -133,72 +145,93 @@ class Observation:
         if not isinstance(obstime, Time):
             raise TypeError("Invalid `obstime` instance. Must be of type `src.time.Time` or `astropy.time.Time`.")
 
-        return (self.calculate_ha(target, location, obstime).to(u.deg) - 180 * u.deg) % (360*u.deg)
+        return (cls.calculate_ha(target, location, obstime).to(u.deg) - 180 * u.deg) % (360*u.deg)
 
-    def calculate_alt(self, zenith='default', target='default'):
-        if zenith != 'default' and not isinstance(zenith, Versor):
+    @classmethod
+    def calculate_alt(cls, target, zenith):
+        if not isinstance(target, SkyLocation):
+            raise TypeError("Invalid `target` instance. Must be of type `src.skylocation.SkyLocation`.")
+        if not isinstance(zenith, Versor):
             raise TypeError("Invalid zenith.")
-        if target != 'default' and not isinstance(target, Versor):
-            raise TypeError("Invalid target.")
 
-        if zenith == 'default':
-            zenith_vsr = self.zenith.vsr
-        else:
-            zenith_vsr = zenith.vsr
-
-        if target == 'default':
-            target_vsr = self.target.vector_obstime.vsr
-        else:
-            target_vsr = target.vsr
+        target_vsr = target.vector_obstime.vsr
+        zenith_vsr = zenith.vsr
 
         if (ps := zenith_vsr.dot(target_vsr)) >= 0:
             return (90 - np.rad2deg(np.arccos(ps))) % 90 * u.deg
         else:
             return (90 - np.rad2deg(np.arccos(ps))) % -90 * u.deg
 
-    def calculate_culmination(self, obstime, epoch_time=None):
+    @classmethod
+    def calculate_culmination(cls, target, location, obstime, epoch_eq='equinoxJ2000'):
+        if not isinstance(target, SkyLocation):
+            raise TypeError("Invalid `target` instance. Must be of type `src.skylocation.SkyLocation`.")
+        if not isinstance(location, Location):
+            raise TypeError("Invalid `location` instance. Must be of type `src.location.Location`.")
         if not isinstance(obstime, Time):
             raise TypeError("Invalid `obstime` instance. Must be of type `src.time.Time` or `astropy.time.Time`.")
+        if epoch_eq != 'equinoxJ2000':
+            raise NotImplementedError("This parameter has not been implemented yet, as other epochs are not available.")
 
-        if self.target.dec * self.location.lat <= 0 and abs(self.target.dec) >= abs(self.location.lat):
+        reference = cls.equinoxes[epoch_eq]
+
+        if target.dec * location.lat <= 0 and abs(target.dec) >= abs(location.lat):
             return None
         else:
-            time = (Tsidday.value/(2*np.pi)) * (self.target.ra - Equinox2000.GMST.rad - self.location.lon).rad * u.day
+            time = (Tsidday.value/(2*np.pi)) * (target.ra - reference.GMST.rad - location.lon).rad * u.day
             if time >= 0:
                 return time + obstime
             else:
                 return time + obstime + 1 * u.day
 
-    def calculate_set_time(self, obstime):
+    @classmethod
+    def calculate_set_time(cls, target, location, obstime):
+        if not isinstance(target, SkyLocation):
+            raise TypeError("Invalid `target` instance. Must be of type `src.skylocation.SkyLocation`.")
+        if not isinstance(location, Location):
+            raise TypeError("Invalid `location` instance. Must be of type `src.location.Location`.")
         if not isinstance(obstime, Time):
             raise TypeError("Invalid `obstime` instance. Must be of type `src.time.Time` or `astropy.time.Time`.")
 
-        if self.target.dec >= self.location.lat or self.target.dec <= -self.location.lat:
+        if target.dec >= location.lat or target.dec <= -location.lat:
             return None
 
-        culm_t = self.calculate_culmination(obstime)
-        return culm_t + Tsidday.to(u.h)/(2*np.pi) * np.arccos(-np.tan(self.target.ra.rad)*np.tan(self.location.lat.rad))
+        culm_t = cls.calculate_culmination(target, location, obstime)
+        visibility_window = cls.calculate_visibility(target, location)
+        return culm_t + visibility_window / 2
 
-    def calculate_rise_time(self, obstime):
+    @classmethod
+    def calculate_rise_time(cls, target, location, obstime):
+        if not isinstance(target, SkyLocation):
+            raise TypeError("Invalid `target` instance. Must be of type `src.skylocation.SkyLocation`.")
+        if not isinstance(location, Location):
+            raise TypeError("Invalid `location` instance. Must be of type `src.location.Location`.")
         if not isinstance(obstime, Time):
             raise TypeError("Invalid `obstime` instance. Must be of type `src.time.Time` or `astropy.time.Time`.")
 
-        if self.target.dec >= self.location.lat or self.target.dec <= -self.location.lat:
+        if target.dec >= location.lat or target.dec <= -location.lat:
             return None
 
-        culm_t = self.calculate_culmination(obstime)
-        return culm_t - Tsidday.to(u.h)/(2*np.pi) * np.arccos(-np.tan(self.target.ra.rad)*np.tan(self.location.lat.rad))
+        culm_t = cls.calculate_culmination(target, location, obstime)
+        visibility_window = cls.calculate_visibility(target, location)
+        return culm_t - visibility_window / 2
 
-    def calculate_visibility(self):
-        warnings.warn("At the moment this method does not take into account the Sun's position.")
+    @classmethod
+    def calculate_visibility(cls, target, location):
+        if not isinstance(target, SkyLocation):
+            raise TypeError("Invalid `target` instance. Must be of type `src.skylocation.SkyLocation`.")
+        if not isinstance(location, Location):
+            raise TypeError("Invalid `location` instance. Must be of type `src.location.Location`.")
+        warnings.warn("\nAt the moment `calculate_visibility` method does not take into account the Sun's position.")
 
-        if abs(self.target.dec) >= abs(self.location.lat):
-            if self.target.dec * self.location.lat > 0:
+        if abs(target.dec) >= abs(location.lat):
+            if target.dec * location.lat > 0:
                 return 24 * u.hour
-            elif self.target.dec * self.location.lat <= 0:
+            elif target.dec * location.lat <= 0:
                 return 0 * u.hour
         else:
-            return 2 * Tsidday.to(u.hour)/(2*np.pi) * np.arccos(-np.tan(self.target.ra) * np.tan(self.location.lat))
+            sidday_factor = Tsidday.to(u.hour) / (2 * np.pi * u.rad)
+            return 2 * sidday_factor * np.arccos(- np.tan(target.dec.rad) * np.tan(location.lat))
 
     def plot_altaz_onday(self, interval=15*u.min):
         interval = interval.to(u.hour)
