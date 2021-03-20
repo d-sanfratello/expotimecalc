@@ -114,7 +114,7 @@ class Observation:
 
         reference = cls.equinoxes[epoch_eq]
 
-        return ((2*np.pi/Tsidday.value) * (obstime - reference.time).jd) % (2*np.pi) * u.rad
+        return ((2 * np.pi * u.rad / Tsidday.value) * (obstime - reference.time).jd)  # % (2*np.pi)
 
     @classmethod
     def lst(cls, location, obstime):
