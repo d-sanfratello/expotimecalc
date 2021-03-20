@@ -6,6 +6,7 @@ from src.time import Time
 from src.skylocation import SkyLocation
 
 from src import Tsidyear
+from src import Equinox2000
 from src import tJ2000
 
 from src import errmsg
@@ -13,6 +14,8 @@ from src import warnmsg
 
 
 class Sun(SkyLocation):
+    equinoxes = {'equinoxJ2000': Equinox2000}
+
     def __init__(self, obstime):
         super(Sun, self).__init__(locstring=None, ra=0*u.hour, dec=0*u.hour, obstime=obstime,
                                   ra_unit='hour', dec_unit='deg', epoch='J2000', name='Sun')
@@ -32,6 +35,13 @@ class Sun(SkyLocation):
         else:
             self.vector_obstime = vector_obstime
 
-    @staticmethod
-    def sidereal_year(obstime):
-        return ((2 * np.pi / Tsidyear.value) * (obstime - tJ2000).jd) % (2*np.pi) * u.rad
+    @classmethod
+    def sidereal_year(cls, obstime, epoch_eq='equinoxJ2000'):
+        if not isinstance(obstime, Time):
+            raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
+        if epoch_eq != 'equinoxJ2000':
+            raise NotImplementedError(errmsg.epochNotImplemented)
+
+        reference = cls.equinoxes[epoch_eq]
+
+        return ((2 * np.pi / Tsidyear.value) * (obstime - reference.time).jd) % (2*np.pi) * u.rad
