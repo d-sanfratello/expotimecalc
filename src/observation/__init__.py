@@ -12,7 +12,6 @@ from src.time import Time
 from src import Versor
 
 from src import Tsidday
-from src import sidday_diff
 from src import Equinox2000
 
 from src import errmsg
@@ -125,8 +124,6 @@ class Observation:
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
 
         shift = Equinox2000.GMST.deg + cls.sidereal_day_rotation(obstime).to(u.deg) + location.lon
-        # day_fraction = 24 * u.hour * (1 - obstime.mjd % int(obstime.mjd))
-        # shift = obstime + location.timezone + day_fraction * sidday_diff
         return shift.to(u.hourangle) % (24 * u.hourangle)
 
     @classmethod
@@ -138,7 +135,7 @@ class Observation:
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
 
-        return (cls.lst(location, obstime) - target.ra).to(u.hourangle) % (24 * u.hourangle)
+        return (cls.lst(location, obstime) - target.vector_obstime.ra).to(u.hourangle) % (24 * u.hourangle)
 
     @classmethod
     def calculate_az(cls, target, location, obstime):
@@ -179,14 +176,15 @@ class Observation:
 
         reference = cls.equinoxes[epoch_eq]
 
-        if target.dec * location.lat <= 0 and abs(target.dec) >= abs(location.lat):
+        if target.vector_obstime.dec * location.lat <= 0 and abs(target.vector_obstime.dec) >= abs(location.lat):
             return None
         else:
-            time = (Tsidday.value/(2*np.pi)) * (target.ra - reference.GMST.rad - location.lon).rad * u.day
+            time = (Tsidday.value/(2*np.pi))*(target.vector_obstime.ra - reference.GMST.rad - location.lon).rad * u.day
+
             if time >= 0:
-                return time + obstime
+                return time + reference.time + (obstime - reference.time)
             else:
-                return time + obstime + 1 * u.day
+                return time + reference.time + (obstime - reference.time) + 1 * u.day
 
     @classmethod
     def calculate_set_time(cls, target, location, obstime):
@@ -197,7 +195,7 @@ class Observation:
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
 
-        if target.dec >= location.lat or target.dec <= -location.lat:
+        if target.vector_obstime.dec >= location.lat or target.vector_obstime.dec <= -location.lat:
             return None
 
         culm_t = cls.calculate_culmination(target, location, obstime)
@@ -213,7 +211,7 @@ class Observation:
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
 
-        if target.dec >= location.lat or target.dec <= -location.lat:
+        if target.vector_obstime.dec >= location.lat or target.vector_obstime.dec <= -location.lat:
             return None
 
         culm_t = cls.calculate_culmination(target, location, obstime)
@@ -228,14 +226,14 @@ class Observation:
             raise TypeError(errmsg.notTypeError.format('location', 'src.location.Location'))
         warnings.warn(warnmsg.visibilityWarning)
 
-        if abs(target.dec) >= abs(location.lat):
-            if target.dec * location.lat > 0:
+        if abs(target.vector_obstime.dec) >= abs(location.lat):
+            if target.vector_obstime.dec * location.lat > 0:
                 return 24 * u.hour
-            elif target.dec * location.lat <= 0:
+            elif target.vector_obstime.dec * location.lat <= 0:
                 return 0 * u.hour
         else:
             sidday_factor = Tsidday.to(u.hour) / (2 * np.pi * u.rad)
-            return 2 * sidday_factor * np.arccos(- np.tan(target.dec.rad) * np.tan(location.lat))
+            return 2 * sidday_factor * np.arccos(- np.tan(target.vector_obstime.dec.rad) * np.tan(location.lat))
 
     def plot_altaz_onday(self, interval=15*u.min):
         interval = interval.to(u.hour)
