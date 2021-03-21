@@ -94,7 +94,11 @@ class SkyLocation(Location):
         self.ra = self.vector_epoch.ra
         self.dec = self.vector_epoch.dec
 
+<<<<<<< HEAD
     def precession_at_date(self, obstime):
+=======
+    def precession_at_date(self, obstime, copy=True):
+>>>>>>> 169b27f12ba9423b0c4e9ec1d7678a6748975990
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
 
@@ -110,6 +114,13 @@ class SkyLocation(Location):
 
         self.obstime = obstime
         self.vector_obstime = self.precession_at_date(obstime)
+
+    def at_date(self, obstime):
+        if not isinstance(obstime, Time):
+            raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
+
+        self.obstime = obstime
+        self.precession_at_date(obstime, copy=False)
 
     def name_object(self, name, epoch):
         if name is None:

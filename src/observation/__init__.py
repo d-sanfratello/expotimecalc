@@ -116,7 +116,11 @@ class Observation:
         if epoch_eq != 'equinoxJ2000':
             raise NotImplementedError(errmsg.epochNotImplemented)
 
+<<<<<<< HEAD
         target_vsr = target.precession_at_date(obstime).vsr
+=======
+        target_vsr = target.precession_at_date(obstime, copy=True).vsr
+>>>>>>> 169b27f12ba9423b0c4e9ec1d7678a6748975990
         zenith_vsr, north_vsr, east_vsr = [v.vsr for v in location.zenith_at_date(obstime, copy=True)]
 
         az_vsr = target_vsr - target_vsr.dot(zenith_vsr) * zenith_vsr
@@ -142,7 +146,11 @@ class Observation:
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
 
+<<<<<<< HEAD
         target_vsr = target.precession_at_date(obstime).vsr
+=======
+        target_vsr = target.precession_at_date(obstime, copy=True).vsr
+>>>>>>> 169b27f12ba9423b0c4e9ec1d7678a6748975990
         zenith_vsr = location.zenith_at_date(obstime, copy=True)[0].vsr
 
         if (ps := zenith_vsr.dot(target_vsr)) >= 0:
@@ -173,7 +181,11 @@ class Observation:
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
         warnings.warn(warnmsg.airmassWarning)
 
+<<<<<<< HEAD
         target_vsr = target.precession_at_date(obstime).vsr
+=======
+        target_vsr = target.precession_at_date(obstime, copy=True).vsr
+>>>>>>> 169b27f12ba9423b0c4e9ec1d7678a6748975990
         zenith_vsr = location.zenith_at_date(obstime, copy=True)[0].vsr
 
         if (ps := zenith_vsr.dot(target_vsr)) > 0:
@@ -195,7 +207,11 @@ class Observation:
 
         reference = cls.equinoxes[epoch_eq]
 
+<<<<<<< HEAD
         vector_obstime = target.precession_at_date(obstime)
+=======
+        vector_obstime = target.precession_at_date(obstime, copy=True)
+>>>>>>> 169b27f12ba9423b0c4e9ec1d7678a6748975990
 
         if vector_obstime.dec * location.lat <= 0 and abs(vector_obstime.dec) >= abs(location.lat):
             return None
@@ -221,7 +237,11 @@ class Observation:
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
 
+<<<<<<< HEAD
         vector_obstime = target.precession_at_date(obstime)
+=======
+        vector_obstime = target.precession_at_date(obstime, copy=True)
+>>>>>>> 169b27f12ba9423b0c4e9ec1d7678a6748975990
 
         if vector_obstime.dec >= location.lat or vector_obstime.dec <= -location.lat:
             return None
@@ -239,7 +259,11 @@ class Observation:
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
 
+<<<<<<< HEAD
         vector_obstime = target.precession_at_date(obstime)
+=======
+        vector_obstime = target.precession_at_date(obstime, copy=True)
+>>>>>>> 169b27f12ba9423b0c4e9ec1d7678a6748975990
 
         if vector_obstime.dec >= location.lat or vector_obstime.dec <= -location.lat:
             return None
@@ -258,7 +282,11 @@ class Observation:
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
         warnings.warn(warnmsg.visibilityWarning)
 
+<<<<<<< HEAD
         vector_obstime = target.precession_at_date(obstime)
+=======
+        vector_obstime = target.precession_at_date(obstime, copy=True)
+>>>>>>> 169b27f12ba9423b0c4e9ec1d7678a6748975990
 
         if abs(vector_obstime.dec) >= abs(location.lat):
             if vector_obstime.dec * location.lat > 0:
@@ -282,7 +310,11 @@ class Observation:
 
         reference = cls.equinoxes[epoch_eq]
 
+<<<<<<< HEAD
         vector_obstime = target.precession_at_date(obstime)
+=======
+        vector_obstime = target.precession_at_date(obstime, copy=True)
+>>>>>>> 169b27f12ba9423b0c4e9ec1d7678a6748975990
 
         if vector_obstime.dec * location.lat <= 0 and abs(vector_obstime.dec) >= abs(location.lat):
             return None
