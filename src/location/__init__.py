@@ -41,7 +41,7 @@ class Location:
             lat, lon = locstring.split()
 
         if isinstance(lat, str):
-            lat = Latitude(type(self).parse_string(lat, 'N', 'S'), unit='deg')
+            lat = Latitude(self.parse_string(lat, 'N', 'S'), unit='deg')
         elif isinstance(lat, (int, float)):
             lat = Latitude(lat, unit='deg')
         elif isinstance(lat, Latitude):
@@ -52,7 +52,7 @@ class Location:
             raise TypeError(errmsg.latNotLonError)
 
         if isinstance(lon, str):
-            lon = Longitude(type(self).parse_string(lon, 'E', 'W'), unit='deg')
+            lon = Longitude(self.parse_string(lon, 'E', 'W'), unit='deg')
         elif isinstance(lon, (int, float)):
             lon = Longitude(lon, unit='deg')
         elif isinstance(lon, Longitude):
