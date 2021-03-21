@@ -94,11 +94,7 @@ class SkyLocation(Location):
         self.ra = self.vector_epoch.ra
         self.dec = self.vector_epoch.dec
 
-<<<<<<< HEAD
     def precession_at_date(self, obstime):
-=======
-    def precession_at_date(self, obstime, copy=True):
->>>>>>> 169b27f12ba9423b0c4e9ec1d7678a6748975990
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
 
