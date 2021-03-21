@@ -13,6 +13,7 @@ from src import hms2deg
 from src import dms2deg
 
 from src import Tprec
+from src import Equinox2000
 from src import tJ2000
 
 from src import errmsg
@@ -21,6 +22,7 @@ from src import warnmsg
 
 class SkyLocation(Location):
     epoch_names = {'J2000': 'J'}
+    equinoxes = {'equinoxJ2000': Equinox2000}
 
     def __init__(self, locstring=None, ra=None, dec=None, obstime=None, ra_unit='hour', dec_unit='deg', epoch='J2000',
                  name=None):
@@ -132,20 +134,29 @@ class SkyLocation(Location):
         dec = "{0:d}d{1:d}m{2:.3f}s".format(int(dec[0]), int(dec[1]), dec[2])
         return ra + " " + dec
 
-    @staticmethod
-    def equinox_prec_corr(obstime):
+    @classmethod
+    def equinox_prec_corr(cls, obstime, epoch_eq='equinoxJ2000'):
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
+        if epoch_eq != 'equinoxJ2000':
+            raise NotImplementedError(errmsg.epochNotImplemented)
 
-        return ((2*np.pi/Tprec.value) * (obstime - tJ2000).jd) % (2*np.pi) * u.rad
+        reference = cls.equinoxes[epoch_eq]
+
+        return ((2*np.pi/Tprec.value) * (obstime - reference.time).jd) % (2*np.pi) * u.rad
 
     @staticmethod
     def nutation_corr(obstime):
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
 
-        # check for Earth Fact Sheet at https://nssdc.gsfc.nasa.gov/planetary/factsheet/earthfact.html
-        return 23.44 * u.deg
+        # check for Kenneth Seidelmann, "Explanatory Supplement to the astronomical almanac" p. 114.
+        # T = (obstime.jd - tJ2000.jd) / 36525
+        # return 23*u.deg+26*u.arcmin+21.448*u.arcsec-46.8150*u.arcsec*T-0.00059*u.arcsec*T**2+0.001813*u.arcsec*T**3
+
+        # check for Earth Fact Sheet at https://nssdc.gsfc.nasa.gov/planetary/factsheet/earthfact.html [23.44]
+        # check for Kenneth Seidelmann, "Explanatory Supplement to the astronomical almanac" p. 315.
+        return 23.43929111 * u.deg
 
 
 import src.skylocation.sun
