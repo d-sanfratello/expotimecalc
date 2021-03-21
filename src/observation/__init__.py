@@ -103,7 +103,9 @@ class Observation:
         if epoch_eq != 'equinoxJ2000':
             raise NotImplementedError(errmsg.epochNotImplemented)
 
-        return (location.lst(obstime, epoch_eq) - target.vector_obstime.ra).to(u.hourangle) % (24 * u.hourangle)
+        target_vsr = target.precession_at_date(obstime).vsr
+
+        return (location.lst(obstime, epoch_eq) - target_vsr.ra).to(u.hourangle) % (24 * u.hourangle)
 
     @classmethod
     def calculate_az(cls, target, location, obstime, epoch_eq='equinoxJ2000'):
