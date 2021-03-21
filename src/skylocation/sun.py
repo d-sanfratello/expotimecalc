@@ -7,7 +7,6 @@ from src.skylocation import SkyLocation
 
 from src import Tsidyear
 from src import Equinox2000
-from src import tJ2000
 
 from src import errmsg
 from src import warnmsg
