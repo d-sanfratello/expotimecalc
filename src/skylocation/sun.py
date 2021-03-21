@@ -17,8 +17,8 @@ class Sun(SkyLocation):
     equinoxes = {'equinoxJ2000': Equinox2000}
 
     def __init__(self, obstime):
-        super(Sun, self).__init__(locstring=None, ra=0*u.hour, dec=0*u.hour, obstime=obstime,
-                                  ra_unit='hour', dec_unit='deg', epoch='J2000', name='Sun')
+        super(Sun, self).__init__(locstring=None, ra=0*u.deg, dec=0*u.deg, obstime=obstime,
+                                  ra_unit='deg', dec_unit='deg', epoch='J2000', name='Sun')
 
         self.vector_obstime = self.observe_at_date(obstime, copy=True)
 
@@ -26,9 +26,9 @@ class Sun(SkyLocation):
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
 
-        vector_obstime = self.vector_epoch.rotate('x', self.nutation_corr(self.obstime), copy=True)\
+        vector_obstime = self.vector_epoch.rotate_inv('x', self.axial_tilt(self.obstime), copy=True)\
             .rotate('z', self.sidereal_year_rotation(self.obstime), copy=True)\
-            .rotate_inv('x', self.nutation_corr(self.obstime), copy=True)
+            .rotate('x', self.axial_tilt(self.obstime), copy=True)
 
         if copy:
             return vector_obstime

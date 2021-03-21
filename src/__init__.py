@@ -69,9 +69,6 @@ def open_loc_file(obs_path, tgt_path):
 
 
 class GMSTeq2000:
-    # hms = 19 * u.hour + 17 * u.min + 57.3258 * u.s
-    # deg = hms2deg(hms)
-    # rad = deg.to(u.rad)
     def __init__(self, time):
         if not isinstance(time, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
@@ -82,31 +79,14 @@ class GMSTeq2000:
 
     @staticmethod
     def __set_time(time):
+        if not isinstance(time, Time):
+            raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
+
         time.location = EarthLocation.of_site('greenwich')
         return time.sidereal_time('mean')
 
 
 class Equinox2000:
-    # """
-    # ssd.jpl.nasa.gov/horizons.cgi
-    #
-    # [For Equinox time]
-    # ephemType=OBSERVER
-    # Target=Sun
-    # Location=Geocentric
-    # TimeSpan: 2000-03-20 07:25:00 - 2000-03-20 07:26:00, intervals=100
-    # settings=default
-    # display=default (HTML)
-    #
-    # [For GMST at equinox]
-    # ephemType=OBSERVER
-    # Target=Sun
-    # Location=Greenwich [000] ( 0°00'00.0''E, 51°28'38.6''N, 65.8 m )
-    # TimeSpan: 2000-03-20 07:25:00 - 2000-03-20 07:26:00, intervals=100
-    # settings=QUANTITIES=1,7,9,20,23,24
-    # display=default (HTML)
-    # """
-    # time = Time('2000-03-20T07:25:24.600', scale='utc', format='isot')
     ts = api.load.timescale()
     eph = api.load('de421.bsp')
     t0 = ts.utc(2000, 3, 20)

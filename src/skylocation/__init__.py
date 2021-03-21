@@ -85,9 +85,9 @@ class SkyLocation(Location):
         self.epoch = Time(epoch).utc
 
         # defined for J2000. Needs revision for other epochs
-        self.vector_epoch = self.vector_epoch.rotate_inv('x', self.nutation_corr(self.obstime), copy=True)\
-            .rotate_inv('z', self.equinox_prec_corr(self.obstime), copy=True)\
-            .rotate('x', self.nutation_corr(self.obstime), copy=True)
+        self.vector_epoch = self.vector_epoch.rotate_inv('x', self.axial_tilt(self.obstime), copy=True)\
+            .rotate_inv('z', self.equinox_prec(self.obstime), copy=True)\
+            .rotate('x', self.axial_tilt(self.obstime), copy=True)
 
     def precession_at_date(self, obstime, copy=True):
         if isinstance(obstime, Time):
@@ -95,9 +95,9 @@ class SkyLocation(Location):
         else:
             self.obstime = Time(obstime).utc
 
-        vector_obstime = self.vector_epoch.rotate('x', self.nutation_corr(self.obstime), copy=True)\
-            .rotate('z', self.equinox_prec_corr(self.obstime), copy=True)\
-            .rotate_inv('x', self.nutation_corr(self.obstime), copy=True)
+        vector_obstime = self.vector_epoch.rotate_inv('x', self.axial_tilt(self.obstime), copy=True)\
+            .rotate('z', self.equinox_prec(self.obstime), copy=True)\
+            .rotate('x', self.axial_tilt(self.obstime), copy=True)
 
         if copy:
             return vector_obstime
@@ -135,7 +135,7 @@ class SkyLocation(Location):
         return ra + " " + dec
 
     @classmethod
-    def equinox_prec_corr(cls, obstime, epoch_eq='equinoxJ2000'):
+    def equinox_prec(cls, obstime, epoch_eq='equinoxJ2000'):
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
         if epoch_eq != 'equinoxJ2000':
@@ -146,7 +146,7 @@ class SkyLocation(Location):
         return ((2*np.pi/Tprec.value) * (obstime - reference.time).jd) % (2*np.pi) * u.rad
 
     @staticmethod
-    def nutation_corr(obstime):
+    def axial_tilt(obstime):
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
 
