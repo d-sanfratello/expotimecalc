@@ -88,6 +88,9 @@ class SkyLocation(Location):
             .rotate_inv('z', self.equinox_prec(self.obstime), copy=True)\
             .rotate('x', self.axial_tilt(self.obstime), copy=True)
 
+        self.ra = self.vector_epoch.ra
+        self.dec = self.vector_epoch.dec
+
     def precession_at_date(self, obstime, copy=True):
         if isinstance(obstime, Time):
             self.obstime = obstime.utc
