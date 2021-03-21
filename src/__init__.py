@@ -150,7 +150,7 @@ class Versor:
         r_mat = RotationMatrix(axis, angle, unit)
         vsr = r_mat.mat.dot(self.vsr)
 
-        vsr /= vsr.sum()
+        vsr /= np.sqrt((vsr**2).sum())
 
         if copy:
             return Versor(vector=vsr)
@@ -162,7 +162,7 @@ class Versor:
         r_mat = RotationMatrix(axis, angle, unit)
         vsr = r_mat.inv.dot(self.vsr)
 
-        vsr /= vsr.sum()
+        vsr /= np.sqrt((vsr**2).sum())
 
         if copy:
             return Versor(vector=vsr)

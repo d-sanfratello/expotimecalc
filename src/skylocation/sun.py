@@ -16,6 +16,9 @@ class Sun(SkyLocation):
     equinoxes = {'equinoxJ2000': Equinox2000}
 
     def __init__(self, obstime):
+        if not isinstance(obstime, Time):
+            raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
+
         super(Sun, self).__init__(locstring=None, ra=0*u.deg, dec=0*u.deg, obstime=obstime,
                                   ra_unit='deg', dec_unit='deg', epoch='J2000', name='Sun')
 

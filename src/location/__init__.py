@@ -2,8 +2,14 @@ from astropy import units as u
 from astropy.coordinates.angles import Latitude
 from astropy.coordinates.angles import Longitude
 from astropy.units.quantity import Quantity
+import numpy as np
+
+from src.time import Time
+from src import Versor
 
 from src import dms2deg
+from src import Equinox2000
+from src import Tsidday
 
 from src import errmsg
 from src import warnmsg
@@ -11,6 +17,7 @@ from src import warnmsg
 
 class Location:
     valid_coord_types = (int, float, str, Latitude, Longitude, Quantity)
+    equinoxes = {'equinoxJ2000': Equinox2000}
 
     @classmethod
     def parse_string(cls, coord_string, coord_letter_pos, coord_letter_neg):
@@ -21,7 +28,7 @@ class Location:
         else:
             return float(coord_string)
 
-    def __init__(self, locstring=None, lat=None, lon=None, timezone=None):
+    def __init__(self, locstring=None, lat=None, lon=None, timezone=None, obstime=None):
         if locstring is None and (lat is None and lon is None):
             raise ValueError(errmsg.mustDeclareLocation)
         elif locstring is None and (lat is None or lon is None):
@@ -36,6 +43,10 @@ class Location:
 
         if timezone is not None and not isinstance(timezone, int):
             raise TypeError(errmsg.notTwoTypesError('timezone', 'Nonetype', 'int'))
+
+        if obstime is not None and not isinstance(obstime, Time):
+            raise TypeError(
+                errmsg.notThreeTypesError.format('obstime', 'Nonetype', 'src.time.Time', 'astropy.time.Time'))
 
         if lat is None and lon is None:
             lat, lon = locstring.split()
@@ -69,3 +80,56 @@ class Location:
             self.timezone = 0 * u.hour
         else:
             self.timezone = timezone * u.hour
+
+        if obstime is None:
+            self.obstime = Equinox2000.time
+        else:
+            self.obstime = obstime
+
+        self.zenithJ2000 = Versor(ra=self.lst(Equinox2000.time).rad,
+                                  dec=self.lat.rad,
+                                  unit='rad')
+        self.north = Versor(ra=180 * u.deg + self.lst(Equinox2000.time),
+                            dec=90 * u.deg - self.lat)
+        self.east = Versor(ra=90 * u.deg + self.lst(Equinox2000.time),
+                           dec=0 * u.deg)
+
+        self.zenith_obstime = None
+        self.zenith_at_date(self.obstime, copy=False)
+
+    def zenith_at_date(self, obstime, copy=True):
+        if not isinstance(obstime, Time):
+            raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
+
+        self.obstime = obstime
+
+        if copy:
+            return (self.zenithJ2000.rotate('z', self.sidereal_day_rotation(obstime), copy=True),
+                    self.north.rotate('z', self.sidereal_day_rotation(self.obstime), copy=True),
+                    self.east.rotate('z', self.sidereal_day_rotation(self.obstime), copy=True))
+        else:
+            self.zenith_obstime = self.zenithJ2000.rotate('z', self.sidereal_day_rotation(obstime), copy=True)
+            self.north = self.north.rotate('z', self.sidereal_day_rotation(self.obstime), copy=True)
+            self.east = self.east.rotate('z', self.sidereal_day_rotation(self.obstime), copy=True)
+
+    @classmethod
+    def sidereal_day_rotation(cls, obstime, epoch_eq='equinoxJ2000'):
+        if not isinstance(obstime, Time):
+            raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
+        if epoch_eq != 'equinoxJ2000':
+            raise NotImplementedError(errmsg.epochNotImplemented)
+
+        reference = cls.equinoxes[epoch_eq]
+
+        return ((2 * np.pi * u.rad / Tsidday.value) * (obstime - reference.time).jd) % (2 * np.pi * u.rad)
+
+    def lst(self, obstime, epoch_eq='equinoxJ2000'):
+        if not isinstance(obstime, Time):
+            raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
+        if epoch_eq != 'equinoxJ2000':
+            raise NotImplementedError(errmsg.epochNotImplemented)
+
+        reference = self.equinoxes[epoch_eq]
+
+        shift = reference.GMST.deg + self.sidereal_day_rotation(obstime).to(u.deg) + self.lon
+        return shift.to(u.hourangle) % (24 * u.hourangle)
