@@ -2,6 +2,7 @@
 invalidEpoch = "`epoch` is not a valid epoch."
 
 # Type errors
+notThreeTypesError = "`{}` must be eiter `{}`, `{}` or `{}`."
 notTwoTypesError = "`{}` must be either `{}` or `{}`."
 notTypeError = "`{}` must be of type `{}`."
 latLonWrongTypeError = "`lat` or `lon` attributes are of wrong type."

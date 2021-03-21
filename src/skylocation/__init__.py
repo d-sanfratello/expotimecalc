@@ -56,6 +56,10 @@ class SkyLocation(Location):
         else:
             raise ValueError(errmsg.mustDeclareRaDecError)
 
+        if obstime is not None and not isinstance(obstime, Time):
+            raise TypeError(
+                errmsg.notThreeTypesError.format('obstime', 'Nonetype', 'src.time.Time', 'astropy.time.Time'))
+
         if name is not None and not isinstance(name, str):
             raise TypeError(errmsg.notTwoTypesError.format('name', 'Nonetype', 'string'))
 
@@ -67,15 +71,14 @@ class SkyLocation(Location):
         self.name = self.name_object(name, epoch)
 
         if obstime is None:
-            self.obstime = Time(epoch).utc
-        elif isinstance(obstime, Time):
-            self.obstime = obstime.utc
+            self.obstime = Equinox2000.time
         else:
-            self.obstime = Time(obstime).utc
-        self.epoch = Time(epoch).utc
+            self.obstime = obstime
+        self.epoch = Time(epoch)
 
         self.vector_epoch = Versor(self.ra, self.dec)
-        self.vector_obstime = self.precession_at_date(self.obstime)
+        self.vector_obstime = None
+        self.at_date(self.obstime)
 
     def convert_to_epoch(self, epoch='J2000'):
         if epoch not in ['J2000']:
@@ -92,10 +95,8 @@ class SkyLocation(Location):
         self.dec = self.vector_epoch.dec
 
     def precession_at_date(self, obstime, copy=True):
-        if isinstance(obstime, Time):
-            self.obstime = obstime.utc
-        else:
-            self.obstime = Time(obstime).utc
+        if not isinstance(obstime, Time):
+            raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
 
         vector_obstime = self.vector_epoch.rotate_inv('x', self.axial_tilt(self.obstime), copy=True)\
             .rotate('z', self.equinox_prec(self.obstime), copy=True)\
@@ -105,6 +106,13 @@ class SkyLocation(Location):
             return vector_obstime
         else:
             self.vector_obstime = vector_obstime
+
+    def at_date(self, obstime):
+        if not isinstance(obstime, Time):
+            raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
+
+        self.obstime = obstime
+        self.precession_at_date(obstime, copy=False)
 
     def name_object(self, name, epoch):
         if name is None:
