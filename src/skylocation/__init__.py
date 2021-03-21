@@ -111,13 +111,6 @@ class SkyLocation(Location):
         self.obstime = obstime
         self.vector_obstime = self.precession_at_date(obstime)
 
-    def at_date(self, obstime):
-        if not isinstance(obstime, Time):
-            raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
-
-        self.obstime = obstime
-        self.precession_at_date(obstime, copy=False)
-
     def name_object(self, name, epoch):
         if name is None:
             coords = self.__repr__()
