@@ -63,7 +63,7 @@ class SkyLocation(Location):
         if name is not None and not isinstance(name, str):
             raise TypeError(errmsg.notTwoTypesError.format('name', 'Nonetype', 'string'))
 
-        super(SkyLocation, self).__init__(locstring, lat=dec, lon=ra)
+        super(SkyLocation, self).__init__(locstring, lat=dec, lon=ra, is_sky=True)
 
         self.dec = self.__dict__.pop('lat')
         self.ra = self.__dict__.pop('lon')
