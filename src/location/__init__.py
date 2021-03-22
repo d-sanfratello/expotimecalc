@@ -28,7 +28,7 @@ class Location:
         else:
             return float(coord_string)
 
-    def __init__(self, locstring=None, lat=None, lon=None, timezone=None, obstime=None):
+    def __init__(self, locstring=None, lat=None, lon=None, timezone=None, obstime=None, is_sky=False):
         if locstring is None and (lat is None and lon is None):
             raise ValueError(errmsg.mustDeclareLocation)
         elif locstring is None and (lat is None or lon is None):
@@ -47,6 +47,11 @@ class Location:
         if obstime is not None and not isinstance(obstime, Time):
             raise TypeError(
                 errmsg.notThreeTypesError.format('obstime', 'Nonetype', 'src.time.Time', 'astropy.time.Time'))
+
+        if not isinstance(is_sky, bool):
+            raise TypeError(errmsg.notTypeError('is_sky', 'bool'))
+
+        self.__is_sky = is_sky
 
         if lat is None and lon is None:
             lat, lon = locstring.split()
@@ -76,28 +81,32 @@ class Location:
         self.lat = lat
         self.lon = lon
 
-        if timezone is None:
-            self.timezone = 0 * u.hour
-        else:
-            self.timezone = timezone * u.hour
-
         if obstime is None:
             self.obstime = Equinox2000.time
         else:
             self.obstime = obstime
 
-        self.zenithJ2000 = Versor(ra=self.lst(Equinox2000.time).rad,
-                                  dec=self.lat.rad,
-                                  unit='rad')
-        self.north = Versor(ra=180 * u.deg + self.lst(Equinox2000.time),
-                            dec=90 * u.deg - self.lat)
-        self.east = Versor(ra=90 * u.deg + self.lst(Equinox2000.time),
-                           dec=0 * u.deg)
+        if not self.__is_sky:
+            if timezone is None:
+                self.timezone = 0 * u.hour
+            else:
+                self.timezone = timezone * u.hour
 
-        self.zenith_obstime = None
-        self.zenith_at_date(self.obstime, copy=False)
+            self.zenithJ2000 = Versor(ra=self.lst(Equinox2000.time).rad,
+                                      dec=self.lat.rad,
+                                      unit='rad')
+
+            self.zenith_obstime = None
+            self.north = Versor(ra=180 * u.deg + self.lst(Equinox2000.time),
+                                dec=90 * u.deg - self.lat)
+            self.east = Versor(ra=90 * u.deg + self.lst(Equinox2000.time),
+                               dec=0 * u.deg)
+
+            self.zenith_at_date(self.obstime, copy=False)
 
     def zenith_at_date(self, obstime, copy=True):
+        if self.__is_sky:
+            raise TypeError(errmsg.cannotAccess.format(self.zenith_at_date.__name__))
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
 
@@ -112,18 +121,21 @@ class Location:
             self.north = self.north.rotate('z', self.sidereal_day_rotation(self.obstime), copy=True)
             self.east = self.east.rotate('z', self.sidereal_day_rotation(self.obstime), copy=True)
 
-    @classmethod
-    def sidereal_day_rotation(cls, obstime, epoch_eq='equinoxJ2000'):
+    def sidereal_day_rotation(self, obstime, epoch_eq='equinoxJ2000'):
+        if self.__is_sky:
+            raise TypeError(errmsg.cannotAccess.format(self.sidereal_day_rotation.__name__))
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
         if epoch_eq != 'equinoxJ2000':
             raise NotImplementedError(errmsg.epochNotImplemented)
 
-        reference = cls.equinoxes[epoch_eq]
+        reference = self.equinoxes[epoch_eq]
 
         return ((2 * np.pi * u.rad / Tsidday.value) * (obstime - reference.time).jd) % (2 * np.pi * u.rad)
 
     def lst(self, obstime, epoch_eq='equinoxJ2000'):
+        if self.__is_sky:
+            raise TypeError(errmsg.cannotAccessError.format(self.lst.__name__))
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
         if epoch_eq != 'equinoxJ2000':

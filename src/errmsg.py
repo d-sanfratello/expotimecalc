@@ -22,3 +22,7 @@ mustDeclareLatLonError = "Must declare both latitude and longitude."
 mustDeclareLocation = "Must declare location of observatory."
 mustDeclareRaDecError = "Must position of sky object."
 versorError = "Must give either a set of coordinates or a ra-dec position."
+
+# Other errors
+cannotAccessError = "This instance of the class cannot access method `{}`."
+wrongKeyword = "Keyword argument {} is not available for this class."
