@@ -3,6 +3,7 @@ import numpy as np
 
 from astropy import units as u
 from astropy.coordinates import Angle
+from astropy.units.quantity import Quantity
 from astropy.visualization import time_support
 from astropy.visualization import quantity_support
 
@@ -115,16 +116,12 @@ class Observation:
         if epoch_eq != 'equinoxJ2000':
             raise NotImplementedError(errmsg.epochNotImplemented)
 
-        target_vsr = target.precession_at_date(obstime).vsr
-        zenith_vsr, north_vsr, east_vsr = [v.vsr for v in location.zenith_at_date(obstime, copy=True)]
+        z_dist = cls.calculate_zenith_dist(target, location, obstime)
 
-        az_vsr = target_vsr - target_vsr.dot(zenith_vsr) * zenith_vsr
-        az_vsr /= np.sqrt((az_vsr**2).sum())
+        target = target.precession_at_date(obstime)
+        cos_az = (np.sin(target.dec) - np.cos(location.lat) * np.cos(z_dist)) / (np.sin(location.lat) * np.sin(z_dist))
 
-        if az_vsr.dot(east_vsr) >= 0:
-            return Angle((np.arccos(az_vsr.dot(north_vsr)) * u.rad).to(u.deg))
-        else:
-            return Angle((2 * np.pi * u.rad - np.arccos(az_vsr.dot(north_vsr)) * u.rad).to(u.deg))
+        return np.arccos(cos_az).to(u.deg)
 
     @classmethod
     def calculate_alt(cls, target, location, obstime):
@@ -142,6 +139,21 @@ class Observation:
             return Angle((90 - np.rad2deg(np.arccos(ps))) % 90 * u.deg)
         else:
             return Angle((90 - np.rad2deg(np.arccos(ps))) % -90 * u.deg)
+
+    @classmethod
+    def estimate_quality(cls, target, location, obstime, parameter=1.5, interval=2*u.hour):
+        if not isinstance(target, SkyLocation):
+            raise TypeError(errmsg.notTypeError.format('target', 'src.skylocation.SkyLocation'))
+        if not isinstance(location, Location):
+            raise TypeError(errmsg.notTypeError.format('location', 'src.location.Location'))
+        if not isinstance(obstime, Time):
+            raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
+        if isinstance(parameter, (Quantity, int)):
+            raise TypeError(errmsg.notTwoTypesError.format('parameter', 'astropy.units.quantity.Quantity', 'int'))
+        if not isinstance(interval, Quantity):
+            raise TypeError(errmsg.notTypeError.format('interval', 'astropy.units.quanrtity.Quantity'))
+
+
 
     @classmethod
     def calculate_zenith_dist(cls, target, location, obstime):
