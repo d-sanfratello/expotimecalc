@@ -87,10 +87,7 @@ class Observation:
         self.visibility = self.calculate_visibility(self.target, self.location, self.obstime)
 
         self.rise_azimuth = self.calculate_az(self.target, self.location, self.rise_time)
-        self.rise_ha = self.calculate_ha(self.target, self.location, self.rise_time)
-
         self.set_azimuth = self.calculate_az(self.target, self.location, self.set_time)
-        self.set_ha = self.calculate_ha(self.target, self.location, self.set_time)
 
     @classmethod
     def calculate_ha(cls, target, location, obstime, epoch_eq='equinoxJ2000'):
@@ -103,7 +100,7 @@ class Observation:
         if epoch_eq != 'equinoxJ2000':
             raise NotImplementedError(errmsg.epochNotImplemented)
 
-        target_vsr = target.precession_at_date(obstime).vsr
+        target_vsr = target.precession_at_date(obstime)
 
         return (location.lst(obstime, epoch_eq) - target_vsr.ra).to(u.hourangle) % (24 * u.hourangle)
 
