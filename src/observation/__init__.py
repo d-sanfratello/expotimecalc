@@ -122,9 +122,9 @@ class Observation:
         az_vsr /= np.sqrt((az_vsr**2).sum())
 
         if az_vsr.dot(east_vsr) >= 0:
-            return (np.arccos(az_vsr.dot(north_vsr)) * u.rad).to(u.deg)
+            return Angle((np.arccos(az_vsr.dot(north_vsr)) * u.rad).to(u.deg))
         else:
-            return (2 * np.pi * u.rad - np.arccos(az_vsr.dot(north_vsr)) * u.rad).to(u.deg)
+            return Angle((2 * np.pi * u.rad - np.arccos(az_vsr.dot(north_vsr)) * u.rad).to(u.deg))
 
     @classmethod
     def calculate_alt(cls, target, location, obstime):
