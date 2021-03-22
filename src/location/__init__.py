@@ -145,3 +145,38 @@ class Location:
 
         shift = reference.GMST.deg + self.sidereal_day_rotation(obstime).to(u.deg) + self.lon
         return shift.to(u.hourangle) % (24 * u.hourangle)
+
+    def __str__(self):
+        lon, lat = self.__repr__().split()
+
+        if lat.find('-') >= 0:
+            lat_string = "{}S".format(lat[1:])
+        else:
+            lat_string = "{}N".format(lat[1:])
+
+        if lon.find('-') >= 0:
+            lon_string = "{}W".format(lon[1:])
+        else:
+            lon_string = "{}E".format(lon[1:])
+
+        return lat_string + " " + lon_string
+
+    def __repr__(self):
+        lon = self.lon
+
+        if lon > 180 * u.deg:
+            lon -= 360 * u.deg
+
+        lon = np.array(lon.dms)
+        if lon[0] < 0:
+            lon[1] *= -1
+            lon[2] *= -1
+
+        lat = np.array(self.lat.dms)
+        if lat[0] < 0:
+            lat[1] *= -1
+            lat[2] *= -1
+
+        lon = "{0:d}d{1:d}m{2:.3f}s".format(int(lon[0]), int(lon[1]), lon[2])
+        lat = "{0:d}d{1:d}m{2:.3f}s".format(int(lat[0]), int(lat[1]), lat[2])
+        return lon + " " + lat
