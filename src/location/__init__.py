@@ -106,7 +106,7 @@ class Location:
 
     def zenith_at_date(self, obstime, copy=True):
         if self.__is_sky:
-            raise TypeError(errmsg.cannotAccess.format(self.zenith_at_date.__name__))
+            raise TypeError(errmsg.cannotAccessError.format(self.zenith_at_date.__name__))
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
 
@@ -123,7 +123,7 @@ class Location:
 
     def sidereal_day_rotation(self, obstime, epoch_eq='equinoxJ2000'):
         if self.__is_sky:
-            raise TypeError(errmsg.cannotAccess.format(self.sidereal_day_rotation.__name__))
+            raise TypeError(errmsg.cannotAccessError.format(self.sidereal_day_rotation.__name__))
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
         if epoch_eq != 'equinoxJ2000':
