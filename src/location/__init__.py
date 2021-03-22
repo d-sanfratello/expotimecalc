@@ -28,7 +28,7 @@ class Location:
         else:
             return float(coord_string)
 
-    def __init__(self, locstring=None, lat=None, lon=None, timezone=None, obstime=None, is_sky=False):
+    def __init__(self, locstring=None, lat=None, lon=None, timezone=None, obstime=None, in_sky=False):
         if locstring is None and (lat is None and lon is None):
             raise ValueError(errmsg.mustDeclareLocation)
         elif locstring is None and (lat is None or lon is None):
@@ -48,10 +48,10 @@ class Location:
             raise TypeError(
                 errmsg.notThreeTypesError.format('obstime', 'Nonetype', 'src.time.Time', 'astropy.time.Time'))
 
-        if not isinstance(is_sky, bool):
+        if not isinstance(in_sky, bool):
             raise TypeError(errmsg.notTypeError('is_sky', 'bool'))
 
-        self.__is_sky = is_sky
+        self.__in_sky = in_sky
 
         if lat is None and lon is None:
             lat, lon = locstring.split()
@@ -86,7 +86,7 @@ class Location:
         else:
             self.obstime = obstime
 
-        if not self.__is_sky:
+        if not self.__in_sky:
             if timezone is None:
                 self.timezone = 0 * u.hour
             else:
@@ -105,7 +105,7 @@ class Location:
             self.zenith_at_date(self.obstime, copy=False)
 
     def zenith_at_date(self, obstime, copy=True):
-        if self.__is_sky:
+        if self.__in_sky:
             raise TypeError(errmsg.cannotAccessError.format(self.zenith_at_date.__name__))
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
@@ -122,7 +122,7 @@ class Location:
             self.east = self.east.rotate('z', self.sidereal_day_rotation(self.obstime), copy=True)
 
     def sidereal_day_rotation(self, obstime, epoch_eq='equinoxJ2000'):
-        if self.__is_sky:
+        if self.__in_sky:
             raise TypeError(errmsg.cannotAccessError.format(self.sidereal_day_rotation.__name__))
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
@@ -134,7 +134,7 @@ class Location:
         return ((2 * np.pi * u.rad / Tsidday.value) * (obstime - reference.time).jd) % (2 * np.pi * u.rad)
 
     def lst(self, obstime, epoch_eq='equinoxJ2000'):
-        if self.__is_sky:
+        if self.__in_sky:
             raise TypeError(errmsg.cannotAccessError.format(self.lst.__name__))
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
