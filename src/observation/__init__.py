@@ -116,12 +116,14 @@ class Observation:
         if epoch_eq != 'equinoxJ2000':
             raise NotImplementedError(errmsg.epochNotImplemented)
 
-        z_dist = cls.calculate_zenith_dist(target, location, obstime)
+        # z_dist = cls.calculate_zenith_dist(target, location, obstime)
+        #
+        # target = target.precession_at_date(obstime)
+        # cos_az = (np.sin(target.dec) - np.cos(location.lat) * np.cos(z_dist)) / (np.sin(location.lat) * np.sin(z_dist))
 
-        target = target.precession_at_date(obstime)
-        cos_az = (np.sin(target.dec) - np.cos(location.lat) * np.cos(z_dist)) / (np.sin(location.lat) * np.sin(z_dist))
+        # return np.arccos(cos_az).to(u.deg)
 
-        return np.arccos(cos_az).to(u.deg)
+        return 90 * u.deg - cls.calculate_ha(target, location, obstime, epoch_eq)  # serve comunque controllo su posizione rispetto a nord O est. Però 2/4 tornano, ora.
 
     @classmethod
     def calculate_alt(cls, target, location, obstime):
