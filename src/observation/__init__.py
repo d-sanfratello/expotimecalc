@@ -116,14 +116,25 @@ class Observation:
         if epoch_eq != 'equinoxJ2000':
             raise NotImplementedError(errmsg.epochNotImplemented)
 
-        # z_dist = cls.calculate_zenith_dist(target, location, obstime)
-        #
-        # target = target.precession_at_date(obstime)
-        # cos_az = (np.sin(target.dec) - np.cos(location.lat) * np.cos(z_dist)) / (np.sin(location.lat) * np.sin(z_dist))
+        target_obstime = target.precession_at_date(obstime)
 
-        # return np.arccos(cos_az).to(u.deg)
+        alt = cls.calculate_alt(target, location, obstime)
 
-        return 90 * u.deg - cls.calculate_ha(target, location, obstime, epoch_eq)  # serve comunque controllo su posizione rispetto a nord O est. Però 2/4 tornano, ora.
+        cos_az = np.sin(target_obstime.dec) - np.sin(alt) * np.sin(location.lat)
+        cos_az /= np.cos(alt) * np.cos(location.lat)
+
+        az = Angle(np.arccos(cos_az).to(u.deg))
+
+        culmination_on_day = cls.calculate_culmination(target, location, obstime, epoch_eq)
+        midnight_culm = int(culmination_on_day.mjd)
+
+        if obstime <= culmination_on_day and \
+                (obstime.mjd <= midnight_culm or (midnight_culm+0.25 <= obstime.mjd <= midnight_culm+0.5)):
+            return az
+        else: # obstime > culmination_on_day:
+            return 360 * u.deg - az
+
+        # return 90 * u.deg - cls.calculate_ha(target, location, obstime, epoch_eq)  # serve comunque controllo su posizione rispetto a nord O est. Però 2/4 tornano, ora.
 
     @classmethod
     def calculate_alt(cls, target, location, obstime):
@@ -226,22 +237,20 @@ class Observation:
 
         reference = cls.equinoxes[epoch_eq]
 
-        vector_obstime = target.precession_at_date(obstime)
+        target_obstime = target.precession_at_date(obstime)
 
-        if vector_obstime.dec * location.lat <= 0 and abs(vector_obstime.dec) >= abs(location.lat):
+        if target_obstime.dec * location.lat <= 0 and abs(target_obstime.dec) >= abs(location.lat):
             return None
         else:
-            delta_time = (Tsidday.value/(2*np.pi))*(vector_obstime.ra - reference.GMST.rad - location.lon).rad * u.day
-            delta_time -= location.timezone
-            delta_time += 12 * u.hour
+            obstime = Time(int(obstime.mjd), format='mjd', scale='utc')
+            obstime.format = 'iso'
 
-            if cls.calculate_alt(target, location, obstime) < 0 * u.deg:
-                delta_time -= 12 * u.hour
+            target_obstime = target.precession_at_date(obstime)
+            zenith_obstime = location.zenith_at_date(obstime, copy=True)[0]
 
-            if delta_time >= 0:
-                return delta_time + obstime
-            else:
-                return delta_time + obstime + 1 * u.day
+            sidday_factor = Tsidday / (2 * np.pi * u.rad).to(u.deg)
+
+            return obstime + (360*u.deg + target_obstime.ra - zenith_obstime.ra).to(u.deg) * sidday_factor
 
     @classmethod
     def calculate_set_time(cls, target, location, obstime):
@@ -252,9 +261,9 @@ class Observation:
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
 
-        vector_obstime = target.precession_at_date(obstime)
+        target_obstime = target.precession_at_date(obstime)
 
-        if vector_obstime.dec >= location.lat or vector_obstime.dec <= -location.lat:
+        if target_obstime.dec >= location.lat or target_obstime.dec <= -location.lat:
             return None
 
         culm_t = cls.calculate_culmination(target, location, obstime)
@@ -270,9 +279,9 @@ class Observation:
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
 
-        vector_obstime = target.precession_at_date(obstime)
+        target_obstime = target.precession_at_date(obstime)
 
-        if vector_obstime.dec >= location.lat or vector_obstime.dec <= -location.lat:
+        if target_obstime.dec >= location.lat or target_obstime.dec <= -location.lat:
             return None
 
         culm_t = cls.calculate_culmination(target, location, obstime)
@@ -289,16 +298,16 @@ class Observation:
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
         warnings.warn(warnmsg.visibilityWarning)
 
-        vector_obstime = target.precession_at_date(obstime)
+        target_obstime = target.precession_at_date(obstime)
 
-        if abs(vector_obstime.dec) >= abs(location.lat):
-            if vector_obstime.dec * location.lat > 0:
+        if abs(target_obstime.dec) >= abs(location.lat):
+            if target_obstime.dec * location.lat > 0:
                 return 24 * u.hour
-            elif vector_obstime.dec * location.lat <= 0:
+            elif target_obstime.dec * location.lat <= 0:
                 return 0 * u.hour
         else:
             sidday_factor = Tsidday.to(u.hour) / (2 * np.pi * u.rad)
-            return 2 * sidday_factor * np.arccos(- np.tan(vector_obstime.dec.rad) * np.tan(location.lat))
+            return 2 * sidday_factor * np.arccos(- np.tan(target_obstime.dec.rad) * np.tan(location.lat))
 
     @classmethod
     def calculate_best_day(cls, target, location, obstime, epoch_eq='equinoxJ2000'):
@@ -313,13 +322,13 @@ class Observation:
 
         reference = cls.equinoxes[epoch_eq]
 
-        vector_obstime = target.precession_at_date(obstime)
+        target_obstime = target.precession_at_date(obstime)
 
-        if vector_obstime.dec * location.lat <= 0 and abs(vector_obstime.dec) >= abs(location.lat):
+        if target_obstime.dec * location.lat <= 0 and abs(target_obstime.dec) >= abs(location.lat):
             return None
         else:
             sidyear_factor = (Tsidyear.value/(2*np.pi))
-            time = vector_obstime.ra + 180 * u.deg - reference.GMST.rad - location.lon
+            time = target_obstime.ra + 180 * u.deg - reference.GMST.rad - location.lon
             time -= location.timezone * 15 * u.deg/u.hour
             time = sidyear_factor * time.rad * u.day
 
