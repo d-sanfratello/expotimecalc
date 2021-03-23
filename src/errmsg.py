@@ -22,6 +22,8 @@ mustDeclareLatLonError = "Must declare both latitude and longitude."
 mustDeclareLocation = "Must declare location of observatory."
 mustDeclareRaDecError = "Must position of sky object."
 versorError = "Must give either a set of coordinates or a ra-dec position."
+altZError = "An `Angle` quantity must be either an altitude or a zenith distance."
+airmassError = "An `int` must be an airmass."
 
 # Other errors
 cannotAccessError = "This instance of the class cannot access method `{}`."

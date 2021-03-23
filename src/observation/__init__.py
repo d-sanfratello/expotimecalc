@@ -141,19 +141,43 @@ class Observation:
             return Angle((90 - np.rad2deg(np.arccos(ps))) % -90 * u.deg)
 
     @classmethod
-    def estimate_quality(cls, target, location, obstime, parameter=1.5, interval=2*u.hour):
+    def estimate_quality(cls, target, location, obstime, parameter=1.5, interval=2*u.hour, par_type='airmass'):
         if not isinstance(target, SkyLocation):
             raise TypeError(errmsg.notTypeError.format('target', 'src.skylocation.SkyLocation'))
         if not isinstance(location, Location):
             raise TypeError(errmsg.notTypeError.format('location', 'src.location.Location'))
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
-        if isinstance(parameter, (Quantity, int)):
+        if not isinstance(parameter, (Quantity, int)):
             raise TypeError(errmsg.notTwoTypesError.format('parameter', 'astropy.units.quantity.Quantity', 'int'))
         if not isinstance(interval, Quantity):
             raise TypeError(errmsg.notTypeError.format('interval', 'astropy.units.quanrtity.Quantity'))
 
+        if not isinstance(par_type, str):
+            raise TypeError(errmsg.notTypeError.format('par_type', 'string'))
+        elif isinstance(parameter, Quantity) and par_type not in ['alt', 'z']:
+            raise ValueError(errmsg.altZError)
+        elif isinstance(parameter, int) and par_type not in ['airmass']:
+            raise ValueError(errmsg.airmassError)
 
+        if par_type == 'alt':
+            z_max = 90 * u.deg - parameter
+        elif par_type == 'z':
+            z_max = parameter
+        elif par_type == 'airmass':
+            # arcsec(1/x) = arccos(x)
+            z_max = np.arccos(1/parameter)
+
+        if cls.calculate_zenith_dist(target, location, cls.calculate_culmination(target, location, obstime)) >= z_max:
+            return False, 0*u.hour
+        else:
+            sidday_factor = Tsidday.to(u.hour) / (2 * np.pi * u.rad)
+
+            time_above = np.cos(z_max) - np.sin(location.lat) * np.sin(target.dec)
+            time_above /= np.cos(location.lat * np.cos(target.dec))
+            time_above = 2 * sidday_factor * np.arccos(time_above)
+
+            return (time_above >= interval), time_above
 
     @classmethod
     def calculate_zenith_dist(cls, target, location, obstime):
