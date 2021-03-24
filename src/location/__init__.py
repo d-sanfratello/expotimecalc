@@ -104,18 +104,30 @@ class Location:
 
             self.zenith_at_date(self.obstime, copy=False)
 
-    def zenith_at_date(self, obstime, copy=True):
+    def zenith_at_date(self, obstime, axis=None, copy=True):
         if self.__in_sky:
             raise TypeError(errmsg.cannotAccessError.format(self.zenith_at_date.__name__))
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
 
+        if axis is not None and not isinstance(axis, str):
+            raise TypeError(errmsg.notTwoTypesError.format('axis', 'Nonetype', 'string'))
+        elif axis is not None and axis.lower() not in ['z', 'n', 'e', 'zenith', 'north', 'east']:
+            raise ValueError(errmsg.invalidDirectionError)
+
         self.obstime = obstime
 
         if copy:
-            return (self.zenithJ2000.rotate('z', self.sidereal_day_rotation(obstime), copy=True),
-                    self.north.rotate('z', self.sidereal_day_rotation(self.obstime), copy=True),
-                    self.east.rotate('z', self.sidereal_day_rotation(self.obstime), copy=True))
+            if axis.lower() in ['z', 'zenith']:
+                return self.zenithJ2000.rotate('z', self.sidereal_day_rotation(obstime), copy=True)
+            elif axis.lower() in ['n', 'north']:
+                return self.north.rotate('z', self.sidereal_day_rotation(self.obstime), copy=True)
+            elif axis.lower() in ['e', 'east']:
+                return self.east.rotate('z', self.sidereal_day_rotation(self.obstime), copy=True)
+            else:
+                return (self.zenithJ2000.rotate('z', self.sidereal_day_rotation(obstime), copy=True),
+                        self.north.rotate('z', self.sidereal_day_rotation(self.obstime), copy=True),
+                        self.east.rotate('z', self.sidereal_day_rotation(self.obstime), copy=True))
         else:
             self.zenith_obstime = self.zenithJ2000.rotate('z', self.sidereal_day_rotation(obstime), copy=True)
             self.north = self.north.rotate('z', self.sidereal_day_rotation(self.obstime), copy=True)

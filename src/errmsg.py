@@ -18,6 +18,7 @@ specifyUnitError = "Must specify the unit of measure."
 
 # Value errors
 invalidAxisError = "Not a valid rotation axis."
+invalidDirectionError = "Not a valid geographical axis."
 mustDeclareLatLonError = "Must declare both latitude and longitude."
 mustDeclareLocation = "Must declare location of observatory."
 mustDeclareRaDecError = "Must position of sky object."

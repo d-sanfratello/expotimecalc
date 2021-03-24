@@ -145,7 +145,7 @@ class Observation:
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
 
         target_vsr = target.precession_at_date(obstime).vsr
-        zenith_vsr = location.zenith_at_date(obstime, copy=True)[0].vsr
+        zenith_vsr = location.zenith_at_date(obstime, axis='z', copy=True).vsr
 
         if (ps := zenith_vsr.dot(target_vsr)) >= 0:
             return Angle((90 - np.rad2deg(np.arccos(ps))) % 90 * u.deg)
@@ -215,7 +215,7 @@ class Observation:
         warnings.warn(warnmsg.airmassWarning)
 
         target_vsr = target.precession_at_date(obstime).vsr
-        zenith_vsr = location.zenith_at_date(obstime, copy=True)[0].vsr
+        zenith_vsr = location.zenith_at_date(obstime, axis='z', copy=True).vsr
 
         if (ps := zenith_vsr.dot(target_vsr)) > 0:
             # airmass = sec(z) = 1/cos(z)
@@ -224,17 +224,13 @@ class Observation:
             return 0
 
     @classmethod
-    def calculate_culmination(cls, target, location, obstime, epoch_eq='equinoxJ2000'):
+    def calculate_culmination(cls, target, location, obstime):
         if not isinstance(target, SkyLocation):
             raise TypeError(errmsg.notTypeError.format('target', 'src.skylocation.SkyLocation'))
         if not isinstance(location, Location):
             raise TypeError(errmsg.notTypeError.format('location', 'src.location.Location'))
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
-        if epoch_eq != 'equinoxJ2000':
-            raise NotImplementedError(errmsg.epochNotImplemented)
-
-        reference = cls.equinoxes[epoch_eq]
 
         target_obstime = target.precession_at_date(obstime)
 
@@ -245,7 +241,7 @@ class Observation:
             obstime.format = 'iso'
 
             target_obstime = target.precession_at_date(obstime)
-            zenith_obstime = location.zenith_at_date(obstime, copy=True)[0]
+            zenith_obstime = location.zenith_at_date(obstime, axis='z', copy=True)
 
             sidday_factor = Tsidday / (2 * np.pi * u.rad).to(u.deg)
 
@@ -333,7 +329,7 @@ class Observation:
 
             best_target = SkyLocation(ra=target.ra, dec=target.dec, obstime=time+obstime)
 
-            return cls.calculate_culmination(best_target, location, time+obstime, epoch_eq)
+            return cls.calculate_culmination(best_target, location, time + obstime)
 
     def plot_altaz_onday(self, interval=15*u.min):
         interval = interval.to(u.hour)
@@ -348,11 +344,8 @@ class Observation:
         index = 0
 
         for t in times:
-            t_zenith = self.zenith_at_date(t)
-            tgt = self.target.precession_at_date(t)
-
-            alt[index] = self.calculate_alt(t_zenith, tgt)
-            az[index] = self.calculate_az(tgt, self.location, t)
+            alt[index] = self.calculate_alt(self.target, self.location, t)
+            az[index] = self.calculate_az(self.target, self.location, t)
 
             index += 1
 
