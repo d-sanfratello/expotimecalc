@@ -72,6 +72,7 @@ class Observation:
 
         self.target.at_date(self.obstime)
         self.location.zenith_at_date(self.obstime, copy=False)
+        self.sun.at_date(self.obstime)
 
         self.ha = self.calculate_ha(self.target, self.location, self.obstime)
         self.az = self.calculate_az(self.target, self.location, self.obstime)

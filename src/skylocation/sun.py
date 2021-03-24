@@ -22,9 +22,9 @@ class Sun(SkyLocation):
         super(Sun, self).__init__(locstring=None, ra=0*u.deg, dec=0*u.deg, obstime=obstime,
                                   ra_unit='deg', dec_unit='deg', epoch='J2000', name='Sun')
 
-        self.vector_obstime = self.observe_at_date(obstime, copy=True)
+        self.at_date(obstime)
 
-    def observe_at_date(self, obstime, copy=True):
+    def observe_at_date(self, obstime):
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
 
@@ -34,10 +34,16 @@ class Sun(SkyLocation):
 
         vector_obstime = vector_obstime.rotate('z', self.equinox_prec(obstime), copy=True)
 
-        if copy:
-            return vector_obstime
-        else:
-            self.vector_obstime = vector_obstime
+        return vector_obstime
+
+    def at_date(self, obstime):
+        if not isinstance(obstime, Time):
+            raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
+
+        self.obstime = obstime
+        self.vector_obstime = self.observe_at_date(obstime)
+        self.ra = self.vector_obstime.ra
+        self.dec = self.vector_obstime.dec
 
     @classmethod
     def sidereal_year_rotation(cls, obstime, epoch_eq='equinoxJ2000'):
