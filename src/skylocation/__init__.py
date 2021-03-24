@@ -100,9 +100,9 @@ class SkyLocation(Location):
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
 
-        vector_obstime = self.vector_epoch.rotate_inv('x', self.axial_tilt(self.obstime), copy=True)\
-            .rotate('z', self.equinox_prec(self.obstime), copy=True)\
-            .rotate('x', self.axial_tilt(self.obstime), copy=True)
+        vector_obstime = self.vector_epoch.rotate_inv('x', self.axial_tilt(obstime), copy=True)\
+            .rotate('z', self.equinox_prec(obstime), copy=True)\
+            .rotate('x', self.axial_tilt(obstime), copy=True)
 
         return vector_obstime
 

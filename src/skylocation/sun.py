@@ -28,9 +28,11 @@ class Sun(SkyLocation):
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
 
-        vector_obstime = self.vector_epoch.rotate_inv('x', self.axial_tilt(self.obstime), copy=True)\
-            .rotate('z', self.sidereal_year_rotation(self.obstime), copy=True)\
-            .rotate('x', self.axial_tilt(self.obstime), copy=True)
+        vector_obstime = self.vector_epoch.rotate_inv('x', self.axial_tilt(obstime), copy=True)\
+            .rotate('z', self.sidereal_year_rotation(obstime), copy=True)\
+            .rotate('x', self.axial_tilt(obstime), copy=True)
+
+        vector_obstime = vector_obstime.rotate('z', self.equinox_prec(obstime), copy=True)
 
         if copy:
             return vector_obstime
