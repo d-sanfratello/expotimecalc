@@ -101,9 +101,9 @@ class Observation:
         if epoch_eq != 'equinoxJ2000':
             raise NotImplementedError(errmsg.epochNotImplemented)
 
-        target_vsr = target.precession_at_date(obstime)
+        target_obstime = target.precession_at_date(obstime)
 
-        return (location.lst(obstime, epoch_eq) - target_vsr.ra).to(u.hourangle) % (24 * u.hourangle)
+        return (location.lst(obstime, epoch_eq) - target_obstime.ra).to(u.hourangle) % (24 * u.hourangle)
 
     @classmethod
     def calculate_az(cls, target, location, obstime, epoch_eq='equinoxJ2000'):
@@ -118,23 +118,22 @@ class Observation:
 
         target_obstime = target.precession_at_date(obstime)
 
-        alt = cls.calculate_alt(target, location, obstime)
+        hangle = cls.calculate_ha(target, location, obstime, epoch_eq)
+        zdist = cls.calculate_zenith_dist(target, location, obstime)
+        if hangle > 12 * u.hourangle:
+            hangle -= 24 * u.hourangle
 
-        cos_az = np.sin(target_obstime.dec) - np.sin(alt) * np.sin(location.lat)
-        cos_az /= np.cos(alt) * np.cos(location.lat)
+            cos_az = np.sin(target_obstime.dec)**2 + np.cos(target_obstime.dec)**2 * np.cos(hangle)
+            cos_az -= np.cos(location.lat - target_obstime.dec) * np.cos(zdist)
+            cos_az /= np.sin(zdist) * np.sin(location.lat - target_obstime.dec)
 
-        az = Angle(np.arccos(cos_az).to(u.deg))
+            return np.arccos(-cos_az).to(u.deg)
+        else:
+            cos_az = np.sin(target_obstime.dec) ** 2 + np.cos(target_obstime.dec) ** 2 * np.cos(hangle)
+            cos_az -= np.cos(location.lat - target_obstime.dec) * np.cos(zdist)
+            cos_az /= np.sin(zdist) * np.sin(location.lat - target_obstime.dec)
 
-        culmination_on_day = cls.calculate_culmination(target, location, obstime, epoch_eq)
-        midnight_culm = int(culmination_on_day.mjd)
-
-        if obstime <= culmination_on_day and \
-                (obstime.mjd <= midnight_culm or (midnight_culm+0.25 <= obstime.mjd <= midnight_culm+0.5)):
-            return az
-        else: # obstime > culmination_on_day:
-            return 360 * u.deg - az
-
-        # return 90 * u.deg - cls.calculate_ha(target, location, obstime, epoch_eq)  # serve comunque controllo su posizione rispetto a nord O est. Però 2/4 tornano, ora.
+            return 360 * u.deg - np.arccos(-cos_az).to(u.deg)
 
     @classmethod
     def calculate_alt(cls, target, location, obstime):
