@@ -32,7 +32,7 @@ class Sun(SkyLocation):
             .rotate('z', self.sidereal_year_rotation(obstime), copy=True)\
             .rotate('x', self.axial_tilt(obstime), copy=True)
 
-        vector_obstime = vector_obstime.rotate('z', self.equinox_prec(obstime), copy=True)
+        # vector_obstime = vector_obstime.rotate('z', self.equinox_prec(obstime), copy=True)
 
         return vector_obstime
 

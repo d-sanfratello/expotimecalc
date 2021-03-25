@@ -14,6 +14,9 @@ from src import warnmsg
 
 class Moon(SkyLocation):
     equinoxes = {'equinoxJ2000': Equinox2000}
+    ecliptic_incl = 5.145396 * u.deg  # Expl. Suppl. p701
+    Tsidmoon = (2.661699489e-6 * u.rad / u.s).to(u.rad/u.d)  # Expl. Suppl. p701
+    Tnode = 6798 * u.d  # Expl. Suppl. p701
 
     def __init__(self, obstime):
         if not isinstance(obstime, Time):
