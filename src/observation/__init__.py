@@ -154,17 +154,24 @@ class Observation:
             return Angle((90 - np.rad2deg(np.arccos(ps))) % -90 * u.deg)
 
     @classmethod
-    def estimate_quality(cls, target, location, obstime, parameter=1.5, interval=2*u.hour, par_type='airmass'):
+    def estimate_quality(cls, target, location, obstime, sun,
+                         parameter=1.5, interval=2*u.hour, par_type='airmass'):
+        # https://www.weather.gov/fsd/twilight for twilight definitions
         if not isinstance(target, SkyLocation):
             raise TypeError(errmsg.notTypeError.format('target', 'src.skylocation.SkyLocation'))
         if not isinstance(location, Location):
             raise TypeError(errmsg.notTypeError.format('location', 'src.location.Location'))
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
+        if not isinstance(sun, Sun):
+            raise TypeError(errmsg.notTypeError.format('sun', 'src.skylocation.sun.Sun'))
         if not isinstance(parameter, (Quantity, int)):
             raise TypeError(errmsg.notTwoTypesError.format('parameter', 'astropy.units.quantity.Quantity', 'int'))
         if not isinstance(interval, Quantity):
             raise TypeError(errmsg.notTypeError.format('interval', 'astropy.units.quanrtity.Quantity'))
+
+        if cls.calculate_zenith_dist(sun, location, obstime) <= (90 + 18) * u.deg:
+            return False,
 
         if not isinstance(par_type, str):
             raise TypeError(errmsg.notTypeError.format('par_type', 'string'))
