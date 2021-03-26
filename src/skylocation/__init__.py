@@ -14,6 +14,7 @@ from src import dms2deg
 
 from src import Tprec
 from src import Equinox2000
+from src import tJ2000
 
 from src import errmsg
 from src import warnmsg
