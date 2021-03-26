@@ -10,8 +10,8 @@ from astropy.visualization import quantity_support
 from src.location import Location
 from src.skylocation import SkyLocation
 from src.skylocation.sun import Sun
+from src.skylocation.moon import Moon
 from src.time import Time
-from src import Versor
 
 from src import Tsidday
 from src import Tsidyear
@@ -43,6 +43,7 @@ class Observation:
         self.obstime = obstime
         self.target = target
         self.sun = Sun(self.obstime)
+        self.moon = Moon(self.obstime)
 
         self.ha = None
         self.az = None
@@ -73,6 +74,7 @@ class Observation:
         self.target.at_date(self.obstime)
         self.location.zenith_at_date(self.obstime, copy=False)
         self.sun.at_date(self.obstime)
+        self.moon.at_date(self.obstime)
 
         self.ha = self.calculate_ha(self.target, self.location, self.obstime)
         self.az = self.calculate_az(self.target, self.location, self.obstime)

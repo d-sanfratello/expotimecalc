@@ -17,6 +17,9 @@ import src.errmsg as errmsg
 Tsidday = (23.9345 * u.hour).to(u.day)
 Tsidyear = 365.256363004 * u.day  # https://hpiers.obspm.fr/eop-pc/models/constants.html
 Tprec = 25770 * Tsidyear  # DOI:10.1016/j.pss.2006.06.003 and DOI:10.1051/0004-6361:20021912
+Tnode = 6798 * u.d  # Expl. Suppl. p701 (precession of Moon's nodes)
+Omegasidmoon = (2.661699489e-6 * u.rad / u.s).to(u.rad / u.d)  # Expl. Suppl. p701 (Revolution frequency of Moon)
+
 tJ2000 = Time('J2000.0')
 sidday_diff = 1 * u.day - Tsidday
 
@@ -100,6 +103,16 @@ class Equinox2000:
     rad = 2 * np.pi * hour
 
 
+class Eclipse1999:
+    ts = api.load.timescale()
+    eph = api.load('de421.bsp')
+    t0 = ts.utc(1999, 8, 1)
+    t1 = ts.utc(1999, 8, 15)
+    t = almanac.find_discrete(t0, t1, almanac.moon_nodes(eph))[0]
+
+    time = Time(t.utc_iso()[0][:-1], scale='utc')
+
+
 class Versor:
     def __init__(self, ra=None, dec=None, vector=None, unit=None):
         if (ra is None and dec is None) and vector is None:
@@ -156,7 +169,7 @@ class Versor:
             return Versor(vector=vsr)
         else:
             self.vsr = vsr
-            return self
+            # return self
 
     def rotate_inv(self, axis, angle, unit='rad', copy=False):
         r_mat = RotationMatrix(axis, angle, unit)
@@ -168,7 +181,7 @@ class Versor:
             return Versor(vector=vsr)
         else:
             self.vsr = vsr
-            return self
+            # return self
 
 
 class RotationMatrix:

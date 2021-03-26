@@ -1,12 +1,18 @@
 import numpy as np
 
 from astropy import units as u
+from astropy.coordinates import Angle
 
+from src import Versor
 from src.time import Time
 from src.skylocation import SkyLocation
 
+from src import Tprec
 from src import Tsidyear
+from src import Tnode
+from src import Omegasidmoon
 from src import Equinox2000
+from src import Eclipse1999
 
 from src import errmsg
 from src import warnmsg
@@ -14,31 +20,67 @@ from src import warnmsg
 
 class Moon(SkyLocation):
     equinoxes = {'equinoxJ2000': Equinox2000}
+    # eclipses = {'total1999': Eclipse1999}
     ecliptic_incl = 5.145396 * u.deg  # Expl. Suppl. p701
-    Tsidmoon = (2.661699489e-6 * u.rad / u.s).to(u.rad/u.d)  # Expl. Suppl. p701
-    Tnode = 6798 * u.d  # Expl. Suppl. p701
 
     def __init__(self, obstime):
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
 
-        super(Moon, self).__init__(locstring=None, ra=0*u.deg, dec=0*u.deg, obstime=obstime,
-                                   ra_unit='deg', dec_unit='deg', epoch='J2000', name='Sun')
+        super(Moon, self).__init__(locstring=None,
+                                   ra='12h10m1.30s', dec='2d44m41.9s', obstime=obstime,
+                                   ra_unit='hms', dec_unit='dms', epoch='J2000', name='Moon')
 
-        self.vector_obstime = self.observe_at_date(obstime, copy=True)
+        self.at_date(obstime)
 
-    def observe_at_date(self, obstime, copy=True):
+    def observe_at_date(self, obstime):
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
 
-        vector_obstime = self.vector_epoch.rotate_inv('x', self.axial_tilt(self.obstime), copy=True)\
-            .rotate('z', self.sidereal_year_rotation(self.obstime), copy=True)\
-            .rotate('x', self.axial_tilt(self.obstime), copy=True)
+        vector_ecl = self.vector_epoch.rotate_inv('x', self.axial_tilt(obstime), copy=True)
+        b_ecliptic_lat = vector_ecl.dec
+        l_ecliptic_lon = vector_ecl.ra
 
-        if copy:
-            return vector_obstime
-        else:
-            self.vector_obstime = vector_obstime
+        vector_obstime = self.vector_epoch.rotate_inv('x', self.axial_tilt(obstime), copy=True)\
+            .rotate_inv('z', l_ecliptic_lon, copy=True).rotate('y', b_ecliptic_lat, copy=True)\
+            .rotate('z', self.moon_revolution(obstime), copy=True)\
+            .rotate('z', self.nodes_precession(obstime), copy=True)\
+            .rotate_inv('y', b_ecliptic_lat, copy=True).rotate('z', l_ecliptic_lon, copy=True)\
+            .rotate('z', self.equinox_prec(obstime), copy=True)\
+            .rotate('x', self.axial_tilt(obstime), copy=True)
+
+        return vector_obstime
+
+    def at_date(self, obstime):
+        if not isinstance(obstime, Time):
+            raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
+
+        self.obstime = obstime
+        self.vector_obstime = self.observe_at_date(obstime)
+        self.ra = self.vector_obstime.ra
+        self.dec = self.vector_obstime.dec
+
+    @classmethod
+    def moon_revolution(cls, obstime, epoch_eq='equinoxJ2000'):
+        if not isinstance(obstime, Time):
+            raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
+        if epoch_eq != 'equinoxJ2000':
+            raise NotImplementedError(errmsg.epochNotImplemented)
+
+        reference = cls.equinoxes[epoch_eq]
+
+        return (Omegasidmoon.value * (obstime - reference.time).jd) % (2 * np.pi) * u.rad
+
+    @classmethod
+    def nodes_precession(cls, obstime, epoch_eq='equinoxJ2000'):
+        if not isinstance(obstime, Time):
+            raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
+        if epoch_eq != 'equinoxJ2000':
+            raise NotImplementedError(errmsg.epochNotImplemented)
+
+        reference = cls.equinoxes[epoch_eq]
+
+        return ((2 * np.pi / Tnode.value) * (obstime - reference.time).jd) % (2 * np.pi) * u.rad
 
     @classmethod
     def sidereal_year_rotation(cls, obstime, epoch_eq='equinoxJ2000'):
@@ -49,4 +91,4 @@ class Moon(SkyLocation):
 
         reference = cls.equinoxes[epoch_eq]
 
-        return ((2 * np.pi / Tsidyear.value) * (obstime - reference.time).jd) % (2*np.pi) * u.rad
+        return ((2 * np.pi / Tsidyear.value) * (obstime - reference.time).jd) % (2 * np.pi) * u.rad
