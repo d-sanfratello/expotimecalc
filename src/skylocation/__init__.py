@@ -80,10 +80,6 @@ class SkyLocation(Location):
         # `dec`, definiti all'epoca in cui ho fornito le coordinate.
         self.dec_epoch = self.__dict__.pop('lat')
         self.ra_epoch = self.__dict__.pop('lon')
-        self.ra = None
-        self.dec = None
-
-        self.name = self.name_object(name, epoch)
 
         if obstime is None:
             # Se nessuna data di osservazione è fornita, viene usata la data dell'equinozio vernale del 2000.
@@ -97,14 +93,27 @@ class SkyLocation(Location):
         self.vector_epoch = Versor(self.ra_epoch, self.dec_epoch)
         self.vector_obstime = None
 
+        # Se è fornita una data, inizializzo le coordinate a quella data.
+        if obstime is not None:
+            vector_obstime = self.precession_at_date(obstime)
+            self.ra = vector_obstime.ra
+            self.dec = vector_obstime.dec
+        else:
+            self.ra = None
+            self.dec = None
+
+        self.name = self.name_object(name, epoch)
+
         # Compio le correzioni per la data di osservazione.
         self.at_date(self.obstime)
 
-    def convert_to_epoch(self, epoch='J2000'):
+    def convert_to_epoch(self, new_epoch, epoch='J2000'):
         """
         Metodo che converte il vettore che indica la posizione all'epoca iniziale ad un'epoca diversa. Per adesso non è
         possibile inserire epoche diverse da quella J2000.
         """
+        if not isinstance(new_epoch, Time):
+            raise TypeError(errmsg.notTwoTypesError.format('new_epoch', 'src.time.Time', 'astropy.time.Time'))
         if epoch not in ['J2000']:
             raise ValueError(errmsg.invalidEpoch)
 
@@ -115,7 +124,7 @@ class SkyLocation(Location):
         # precessione degli equinozi, riportando poi la posizione in coordinate equatoriali. Dato che non è considerata
         # la nutazione, la rotazione intorno all'asse x è, di fatto, un semplice cambio di base.
         self.vector_epoch = self.vector_epoch.rotate_inv('x', self.axial_tilt(old_eq.time), copy=True)\
-            .rotate_inv('z', self.equinox_prec(old_eq, self.epoch_rel_eq[epoch]), copy=True)\
+            .rotate_inv('z', self.equinox_prec(new_epoch, self.epoch_rel_eq[epoch]), copy=True)\
             .rotate('x', self.axial_tilt(epoch_eq.time), copy=True)
 
         self.epoch = Time(epoch).utc
