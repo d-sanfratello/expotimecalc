@@ -20,8 +20,17 @@ class Moon(SkyLocation):
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
 
+        # https://ssd.jpl.nasa.gov/horizons.cgi
+        # Ephemeris Type [change] : 	OBSERVER
+        # Target Body [change] : 	    Moon [Luna] [301]
+        # Observer Location [change] : 	Greenwich [000] ( 0°00'00.0''E, 51°28'38.6''N, 65.8 m )
+        # Time Span [change] : 	        Start=2000-03-20 07:35, Stop=2000-03-20 07:37, Intervals=120
+        # Table Settings [change] : 	QUANTITIES=1,7,9,20,23,24
+        # Display/Output [change] : 	default (formatted HTML)
+        #
+        # Selected RA-DEC for the time corresponding to `Equinox2000.time`.
         super(Moon, self).__init__(locstring=None,
-                                   ra='12h10m1.30s', dec='2d44m41.9s', obstime=obstime,
+                                   ra='12h10m9.25s', dec='2d39m54.9s', obstime=obstime,
                                    ra_unit='hms', dec_unit='dms', epoch='J2000', name='Moon')
 
         self.at_date(obstime)
