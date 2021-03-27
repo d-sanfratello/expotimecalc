@@ -170,7 +170,6 @@ class Versor:
             return Versor(vector=vsr)
         else:
             self.vsr = vsr
-            # return self
 
     def rotate_inv(self, axis, angle, unit='rad', copy=False):
         r_mat = RotationMatrix(axis, angle, unit)
@@ -182,7 +181,6 @@ class Versor:
             return Versor(vector=vsr)
         else:
             self.vsr = vsr
-            # return self
 
 
 class RotationMatrix:
