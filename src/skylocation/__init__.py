@@ -182,7 +182,10 @@ class SkyLocation(Location):
 
         # check for Kenneth Seidelmann, "Explanatory Supplement to the astronomical almanac" p. 114.
         # T = (obstime.jd - tJ2000.jd) / 36525
-        # return 23*u.deg+26*u.arcmin+21.448*u.arcsec-46.8150*u.arcsec*T-0.00059*u.arcsec*T**2+0.001813*u.arcsec*T**3
+        # return 23 * u.deg + 26 * u.arcmin + 21.448 * u.arcsec - \
+        #             46.8150 * u.arcsec * T - \
+        #             0.00059 * u.arcsec * T**2 + \
+        #             0.001813 * u.arcsec * T**3
 
         # check for Earth Fact Sheet at https://nssdc.gsfc.nasa.gov/planetary/factsheet/earthfact.html [23.44]
         # check for Kenneth Seidelmann, "Explanatory Supplement to the astronomical almanac" p. 315.
