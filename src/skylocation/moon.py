@@ -4,6 +4,7 @@ from astropy import units as u
 
 from src.time import Time
 from src.skylocation import SkyLocation
+from src.skylocation.sun import Sun
 
 from src import Tsidyear
 from src import Omegasidmoon
@@ -97,3 +98,21 @@ class Moon(SkyLocation):
         reference = cls.equinoxes[epoch_eq]
 
         return (Omegasidmoon.value * (obstime - reference.time).jd) % (2 * np.pi) * u.rad
+
+    def calculate_moon_phase(self, sun, obstime):
+        """
+        Metodo che calcola la fase della Luna, dato il Sole. Notare che non vi è alcuna differenza tra fase crescente e
+        calante. Il metodo restituisce `1` se la Luna è piena e `0` se è nuova.
+        """
+        if not isinstance(sun, SkyLocation):
+            raise TypeError(errmsg.notTypeError.format('sun', 'src.skylocation.sun.Sun'))
+        if not isinstance(obstime, Time):
+            raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
+
+        moon_obstime = self.observe_at_date(obstime)
+        sun_obstime = sun.observe_at_date(obstime)
+
+        # Calcolo del prodotto scalare dei vettori, rinormalizzato per dare il valore richiesto. Nel caso di Luna Nuova,
+        # il prodotto scalare varrebbe `1`, e `-1` nel caso di Luna Piena. In questo modo si restituiscono i valori
+        # dichiarati nella descrizione del metodo.
+        return (- moon_obstime.vsr.dot(sun_obstime.vsr) + 1) / 2
