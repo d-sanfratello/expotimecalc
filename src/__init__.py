@@ -2,6 +2,7 @@ import numpy as np
 
 from astropy import units as u
 from astropy.coordinates import EarthLocation
+from astropy.coordinates import Angle
 from astropy.coordinates.angles import Latitude
 from astropy.coordinates.angles import Longitude
 
@@ -37,11 +38,11 @@ def hms2deg(hms):
 
         return (hour + mins + sec) * 15 * u.deg
     elif isinstance(hms, (int, float)):
-        return hms * 15 * u.deg
+        return Angle(hms * 15 * u.deg)
     elif isinstance(hms, u.quantity.Quantity) and hms.unit == "h":
-        return hms * 360*u.deg / (24 * u.hour)
+        return Angle(hms * 360*u.deg / (24 * u.hour))
     elif isinstance(hms, (np.ndarray, tuple, list)) and len(hms) == 3:
-        return (hms[0] + hms[1] + hms[2]).to(u.hour).value * 15 * u.deg
+        return Angle((hms[0] + hms[1] + hms[2]).to(u.hour).value * 15 * u.deg)
 
 
 def dms2deg(dms):
@@ -57,9 +58,9 @@ def dms2deg(dms):
     sec = float(sec) * u.arcsec
 
     if deg.value >= 0:
-        return deg + mins + sec
+        return Angle(deg + mins + sec)
     else:
-        return deg - mins - sec
+        return Angle(deg - mins - sec)
 
 
 def open_loc_file(obs_path, tgt_path):
