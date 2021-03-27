@@ -17,7 +17,6 @@ import src.errmsg as errmsg
 Tsidday = (23.9345 * u.hour).to(u.day)
 Tsidyear = 365.256363004 * u.day  # https://hpiers.obspm.fr/eop-pc/models/constants.html
 Tprec = 25770 * Tsidyear  # DOI:10.1016/j.pss.2006.06.003 and DOI:10.1051/0004-6361:20021912
-Tnode = 6798 * u.d  # Expl. Suppl. p701 (precession of Moon's nodes)
 Omegasidmoon = (2.661699489e-6 * u.rad / u.s).to(u.rad / u.d)  # Expl. Suppl. p701 (Revolution frequency of Moon)
 
 tJ2000 = Time('J2000.0')
