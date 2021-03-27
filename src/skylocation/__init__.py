@@ -98,22 +98,24 @@ class SkyLocation(Location):
             vector_obstime = self.precession_at_date(obstime)
             self.ra = vector_obstime.ra
             self.dec = vector_obstime.dec
+
+            self.convert_to_epoch(obstime)
         else:
             self.ra = None
             self.dec = None
 
+            # Compio le correzioni per la data di osservazione.
+            self.at_date(self.obstime)
+
         self.name = self.name_object(name, epoch)
 
-        # Compio le correzioni per la data di osservazione.
-        self.at_date(self.obstime)
-
-    def convert_to_epoch(self, new_epoch, epoch='J2000'):
+    def convert_to_epoch(self, obstime, epoch='J2000'):
         """
         Metodo che converte il vettore che indica la posizione all'epoca iniziale ad un'epoca diversa. Per adesso non è
         possibile inserire epoche diverse da quella J2000.
         """
-        if not isinstance(new_epoch, Time):
-            raise TypeError(errmsg.notTwoTypesError.format('new_epoch', 'src.time.Time', 'astropy.time.Time'))
+        if not isinstance(obstime, Time):
+            raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
         if epoch not in ['J2000']:
             raise ValueError(errmsg.invalidEpoch)
 
@@ -124,7 +126,7 @@ class SkyLocation(Location):
         # precessione degli equinozi, riportando poi la posizione in coordinate equatoriali. Dato che non è considerata
         # la nutazione, la rotazione intorno all'asse x è, di fatto, un semplice cambio di base.
         self.vector_epoch = self.vector_epoch.rotate_inv('x', self.axial_tilt(old_eq.time), copy=True)\
-            .rotate_inv('z', self.equinox_prec(new_epoch, self.epoch_rel_eq[epoch]), copy=True)\
+            .rotate_inv('z', self.equinox_prec(obstime, self.epoch_rel_eq[epoch]), copy=True)\
             .rotate('x', self.axial_tilt(epoch_eq.time), copy=True)
 
         self.epoch = Time(epoch).utc
