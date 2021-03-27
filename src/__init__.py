@@ -19,6 +19,8 @@ Tsidyear = 365.256363004 * u.day  # https://hpiers.obspm.fr/eop-pc/models/consta
 Tprec = 25770 * Tsidyear  # DOI:10.1016/j.pss.2006.06.003 and DOI:10.1051/0004-6361:20021912
 Omegasidmoon = (2.661699489e-6 * u.rad / u.s).to(u.rad / u.d)  # Expl. Suppl. p701 (Revolution frequency of Moon)
 
+moon_incl_to_ecliptic = 5.145396 * u.deg  # Expl. Suppl. p701
+
 tJ2000 = Time('J2000.0')
 sidday_diff = 1 * u.day - Tsidday
 
