@@ -193,3 +193,4 @@ class SkyLocation(Location):
 
 
 import src.skylocation.sun
+import src.skylocation.moon

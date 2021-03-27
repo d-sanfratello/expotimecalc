@@ -232,5 +232,6 @@ import src.observation
 import src.time
 import src.skylocation
 import src.skylocation.sun
+import src.skylocation.moon
 import src.errmsg
 import src.warnmsg
