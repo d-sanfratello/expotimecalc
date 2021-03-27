@@ -23,6 +23,7 @@ from src import warnmsg
 class SkyLocation(Location):
     epoch_names = {'J2000': 'J'}
     equinoxes = {'equinoxJ2000': Equinox2000}
+    epoch_rel_eq = {'J2000': 'equinoxJ2000'}
 
     def __init__(self, locstring=None, ra=None, dec=None, obstime=None, ra_unit='hour', dec_unit='deg', epoch='J2000',
                  name=None):
@@ -87,12 +88,14 @@ class SkyLocation(Location):
         if epoch not in ['J2000']:
             raise ValueError(errmsg.invalidEpoch)
 
-        self.epoch = Time(epoch).utc
+        epoch_eq = self.equinoxes[self.epoch_rel_eq[epoch]]
 
         # defined for J2000. Needs revision for other epochs
-        self.vector_epoch = self.vector_epoch.rotate_inv('x', self.axial_tilt(self.obstime), copy=True)\
-            .rotate_inv('z', self.equinox_prec(self.obstime), copy=True)\
-            .rotate('x', self.axial_tilt(self.obstime), copy=True)
+        self.vector_epoch = self.vector_epoch.rotate_inv('x', self.axial_tilt(self.epoch), copy=True)\
+            .rotate_inv('z', self.equinox_prec(self.obstime, epoch_eq), copy=True)\
+            .rotate('x', self.axial_tilt(self.epoch), copy=True)
+
+        self.epoch = Time(epoch).utc
 
         self.ra_epoch = self.vector_epoch.ra
         self.dec_epoch = self.vector_epoch.dec
