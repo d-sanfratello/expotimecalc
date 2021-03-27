@@ -17,9 +17,15 @@ class Moon(SkyLocation):
     equinoxes = {'equinoxJ2000': Equinox2000}
 
     def __init__(self, obstime):
+        """
+        Classe che descrive il moto della Luna in funzione della data di osservazione.
+        """
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
 
+        # La posizione iniziale, in coordinate equatoriali, è fornita dalle Effemeridi ricavate dal sito del JPL,
+        # secondo quanto riportato a seguire. L'equinozio di riferimento è quello del 2000.:
+        #
         # https://ssd.jpl.nasa.gov/horizons.cgi
         # Ephemeris Type [change] : 	OBSERVER
         # Target Body [change] : 	    Moon [Luna] [301]
@@ -36,13 +42,26 @@ class Moon(SkyLocation):
         self.at_date(obstime)
 
     def observe_at_date(self, obstime):
+        """
+        Metodo che calcola, senza salvarne il risultato, la posizione della Luna ad una specifica data.
+        """
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
 
+        # Per ricavare le coordinate eclittiche della luna, all'epoca, il versore iniziale viene ruotato intorno
+        # all'asse x per ottenere le coordinate eclittiche. A questo punto, anche se il nome dell'attributo è sempre
+        # 'ra' e 'dec', tali valori rappresentano le coordinate 'b' e 'l' in un sistema di coordinate eclittiche.
         vector_ecl = self.vector_epoch.rotate_inv('x', self.axial_tilt(obstime), copy=True)
         b_ecliptic_lat = vector_ecl.dec
         l_ecliptic_lon = vector_ecl.ra
 
+        # La posizione della Luna viene convertita in coordinate eclittiche, con una rotazione intorno all'asse x.
+        # Quindi viene applicata una rotazione per portare tale vettore in coordinate (0,0) (e poter lavorare in maniera
+        # più comoda con le rotazioni). Essendo in coordinate del piano orbitale lunare, viene applicata una rotazione
+        # intorno a z secondo il periodo di rivoluzione della Luna intorno alla Terra, quindi il vettore risultante
+        # viene riportato in coordinate eclittiche con le opportune rotazioni inverse. Infine il vettore risultante è
+        # riportato in coordinate equatoriali. Il risultato complessivo è un operatore applicato dopo un complesso
+        # cambio di base.
         vector_obstime = self.vector_epoch.rotate_inv('x', self.axial_tilt(obstime), copy=True)\
             .rotate_inv('z', l_ecliptic_lon, copy=True).rotate('y', b_ecliptic_lat, copy=True)\
             .rotate('z', self.moon_revolution(obstime), copy=True) \
@@ -53,6 +72,9 @@ class Moon(SkyLocation):
         return vector_obstime
 
     def at_date(self, obstime):
+        """
+        Metodo che salva il risultato di `Moon.observe_at_date` nei relativi attributi di classe.
+        """
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
 
@@ -63,6 +85,10 @@ class Moon(SkyLocation):
 
     @classmethod
     def moon_revolution(cls, obstime, epoch_eq='equinoxJ2000'):
+        """
+        Metodo di classe che calcola la fase data dalla rivoluzione della Luna intorno alla Terra, rispetto
+        all'equinozio di riferimento.
+        """
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
         if epoch_eq != 'equinoxJ2000':
@@ -71,14 +97,3 @@ class Moon(SkyLocation):
         reference = cls.equinoxes[epoch_eq]
 
         return (Omegasidmoon.value * (obstime - reference.time).jd) % (2 * np.pi) * u.rad
-
-    @classmethod
-    def sidereal_year_rotation(cls, obstime, epoch_eq='equinoxJ2000'):
-        if not isinstance(obstime, Time):
-            raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
-        if epoch_eq != 'equinoxJ2000':
-            raise NotImplementedError(errmsg.epochNotImplemented)
-
-        reference = cls.equinoxes[epoch_eq]
-
-        return ((2 * np.pi / Tsidyear.value) * (obstime - reference.time).jd) % (2 * np.pi) * u.rad

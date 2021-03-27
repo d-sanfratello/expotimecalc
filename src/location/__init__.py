@@ -21,14 +21,32 @@ class Location:
 
     @classmethod
     def parse_string(cls, coord_string, coord_letter_pos, coord_letter_neg):
+        """
+        Metodo di classe per effettuare il parsing di una stringa, che serve a determinare se si tratta di latitudine N
+        o S o di longitudine E o W, e assegnare il segno opportuno. Viene indicata la stringa e quali lettere sono da
+        considerarsi per le coordinate positive e per quelle negative.
+        :param coord_string:
+        :param coord_letter_pos:
+        :param coord_letter_neg:
+        :return:
+        """
         if (_ := coord_string.lower().find(coord_letter_pos.lower())) >= 0:
+            # Se trova la lettera per le coordinate positive
             return dms2deg(coord_string[:_])
         elif (_ := coord_string.lower().find(coord_letter_neg.lower())) >= 0:
+            # Se trova la lettera per le coordinate negative
             return -dms2deg(coord_string[:_])
         else:
+            # Se non trova lettere, la considera una stringa di un valore numerico.
             return float(coord_string)
 
     def __init__(self, locstring=None, lat=None, lon=None, timezone=None, obstime=None, in_sky=False):
+        """
+        Classe che definisce un vettore posizione data una stringa di coordinate o, direttamente, le coordinate
+        assegnate agli argomenti `lat`, `lon`. Viene indicato anche il fuso orario e se l'oggetto è in cielo. L'ultimo
+        parametro è utile in quanto questa classe ha caratteristiche ereditate dalla classe
+        `src.skylocation.SkyLocation`.
+        """
         if locstring is None and (lat is None and lon is None):
             raise ValueError(errmsg.mustDeclareLocation)
         elif locstring is None and (lat is None or lon is None):
@@ -53,6 +71,8 @@ class Location:
 
         self.__in_sky = in_sky
 
+        # Controlla le coordinate o le interpreta dalla stringa, assegnandole a degli oggetti
+        # `astropy.coordinates.angles.Latitude` e `astropy.coordinates.angles.Longitude`.
         if lat is None and lon is None:
             lat, lon = locstring.split()
 
@@ -81,12 +101,17 @@ class Location:
         self.lat = lat
         self.lon = lon
 
+        # Se non è assegnata alcuna data di osservazione, viene indicata la data dell'equinozio vernale del 2000.
         if obstime is None:
             self.obstime = Equinox2000.time
         else:
             self.obstime = obstime
 
         if not self.__in_sky:
+            # Se l'oggetto ha coordinate terrestri, viene salvato il fuso orario e vengono assegnate le posizioni, in
+            # coordinate celesti, dello zenith all'equinozio 2000 e alla data. Inoltre, per comodità, anche se poi non
+            # sono utilizzate altrove, vengono anche fornite le coordinate degli assi che identificano il nord e l'est
+            # locali.
             if timezone is None:
                 self.timezone = 0 * u.hour
             else:
@@ -105,6 +130,10 @@ class Location:
             self.zenith_at_date(self.obstime, copy=False)
 
     def zenith_at_date(self, obstime, axis=None, copy=True):
+        """
+        Metodo che calcola la posizione, sulla sfera celeste, del punto indicato dallo zenith alla data. Nel caso in cui
+        l'oggetto che chiama questa funzione fosse già un oggetto celeste, questo metodo solleva un'eccezione.
+        """
         if self.__in_sky:
             raise TypeError(errmsg.cannotAccessError.format(self.zenith_at_date.__name__))
         if not isinstance(obstime, Time):
@@ -119,22 +148,33 @@ class Location:
 
         if copy:
             if axis.lower() in ['z', 'zenith']:
+                # Se si chiede di restituire lo zenith.
                 return self.zenithJ2000.rotate('z', self.sidereal_day_rotation(obstime), copy=True)
             elif axis.lower() in ['n', 'north']:
+                # Se si chiede di restituire il nord.
                 return self.north.rotate('z', self.sidereal_day_rotation(self.obstime), copy=True)
             elif axis.lower() in ['e', 'east']:
+                # Se si chiede di restituire l'est.
                 return self.east.rotate('z', self.sidereal_day_rotation(self.obstime), copy=True)
             else:
+                # Se nessuna scelta è indicata, viene restituita una tupla contenente i tre vettori.
                 return (self.zenithJ2000.rotate('z', self.sidereal_day_rotation(obstime), copy=True),
                         self.north.rotate('z', self.sidereal_day_rotation(self.obstime), copy=True),
                         self.east.rotate('z', self.sidereal_day_rotation(self.obstime), copy=True))
         else:
+            # Se si indica di NON volere una copia dei vettori, invece, il vettore ruotato viene assegnato
+            # all'attributo corrispondente.
             self.zenith_obstime = self.zenithJ2000.rotate('z', self.sidereal_day_rotation(obstime), copy=True)
             self.north = self.north.rotate('z', self.sidereal_day_rotation(self.obstime), copy=True)
             self.east = self.east.rotate('z', self.sidereal_day_rotation(self.obstime), copy=True)
 
     def sidereal_day_rotation(self, obstime, epoch_eq='equinoxJ2000'):
+        """
+        Metodo che calcola la rotazione dello zenith locale dovuta alla rotazione della Terra intorno al proprio asse,
+        secondo il giorno siderale.
+        """
         if self.__in_sky:
+            # Se è un'istanza di un oggetto celeste, viene sollevata un'eccezione.
             raise TypeError(errmsg.cannotAccessError.format(self.sidereal_day_rotation.__name__))
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
@@ -143,9 +183,15 @@ class Location:
 
         reference = self.equinoxes[epoch_eq]
 
+        # Fase della rotazione di periodo dato dal giorno siderale, in funzione dell'equinozio di riferimento.
         return ((2 * np.pi * u.rad / Tsidday.value) * (obstime - reference.time).jd) % (2 * np.pi * u.rad)
 
     def lst(self, obstime, epoch_eq='equinoxJ2000'):
+        """
+        Metodo che calcola il tempo siderale locale, alla data. L'equinozio viene indicato perché serve alla chiamata
+        del metodo `Location.sidereal_day_rotation`, anche se al momento il riferimento è inutilizzato. Inoltre serve
+        per fornire il valore dell'LST a Greenwich, contenuta nell'equinozio.
+        """
         if self.__in_sky:
             raise TypeError(errmsg.cannotAccessError.format(self.lst.__name__))
         if not isinstance(obstime, Time):
@@ -155,10 +201,20 @@ class Location:
 
         reference = self.equinoxes[epoch_eq]
 
+        # Sfruttando il fatto che la posizione sulla sfera celeste dello zenith alla data indica il LST, si ricava il
+        # GMST come:
+        #
+        #       deltaLST = GMST(at equinox date) + LST(at date) + longitude.
+        #
         shift = reference.GMST.deg + self.sidereal_day_rotation(obstime).to(u.deg) + self.lon
         return shift.to(u.hourangle) % (24 * u.hourangle)
 
     def __str__(self):
+        """
+        Metodo 'magico' di python per gestire la chiamata `print(Location)`. Restituisce una stringa con le coordinate
+        geografiche.
+
+        """
         lon, lat = self.__repr__().split()
 
         if lat.find('-') >= 0:
@@ -174,6 +230,10 @@ class Location:
         return lat_string + " " + lon_string
 
     def __repr__(self):
+        """
+        Metodo 'magico' di python per gestire la chiamata `Location` nel terminale. Restituisce le coordinate
+        geografiche.
+        """
         lon = self.lon
 
         if lon > 180 * u.deg:

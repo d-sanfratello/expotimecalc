@@ -27,6 +27,10 @@ sidday_diff = 1 * u.day - Tsidday
 
 
 def hms2deg(hms):
+    """
+    Funzione che prende un angolo orario, in formato "[hh]h[mm]m[ss]s", numerico, tupla/lista/np.ndarray o
+     `astropy.units.quantity.Quantity` e la converte in gradi, restituendo un angolo.
+    """
     if isinstance(hms, str):
         hour, minsec = hms.lower().split('h')
         mins, sec = minsec.lower().split('m')
@@ -46,6 +50,9 @@ def hms2deg(hms):
 
 
 def dms2deg(dms):
+    """
+    Funzione che prende un angolo, in formato "[ddd]d[mm]m[ss]s", e lo converte in gradi, restituendo un angolo.
+    """
     if not isinstance(dms, str):
         raise TypeError(errmsg.notTypeError.format('dms', 'string'))
 
@@ -64,6 +71,10 @@ def dms2deg(dms):
 
 
 def open_loc_file(obs_path, tgt_path):
+    """
+    Funzione che dato un percorso e un file, apre quest'ultimo per generare le stringhe che identificano località,
+    orario di osservazione e target.
+    """
     with open(obs_path, "r") as f:
         loc, obstime = f.readlines()
 
@@ -75,6 +86,9 @@ def open_loc_file(obs_path, tgt_path):
 
 class GMSTeq2000:
     def __init__(self, time):
+        """
+        Classe che identifica il Greenwich Mean Sidereal Time all'equinozio vernale del 2000.
+        """
         if not isinstance(time, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
 
@@ -92,6 +106,9 @@ class GMSTeq2000:
 
 
 class Equinox2000:
+    """
+    Costante che definisce l'equinozio vernale del 2000, calcolandolo dalle effemeridi de421.
+    """
     ts = api.load.timescale()
     eph = api.load('de421.bsp')
     t0 = ts.utc(2000, 3, 20)
@@ -106,6 +123,9 @@ class Equinox2000:
 
 
 class Eclipse1999:
+    """
+    Costante che definisce l'eclissi di sole dell'agosto 1999, calcolandolo dalle effemeridi de421.
+    """
     ts = api.load.timescale()
     eph = api.load('de421.bsp')
     t0 = ts.utc(1999, 8, 1)
@@ -117,6 +137,10 @@ class Eclipse1999:
 
 class Versor:
     def __init__(self, ra=None, dec=None, vector=None, unit=None):
+        """
+        Classe che accetta delle coordinate equatoriali o un vettore in coordinate cartesiane e genera il versore che
+        punta quelle coordinate.
+        """
         if (ra is None and dec is None) and vector is None:
             raise ValueError(errmsg.versorError)
 
@@ -128,6 +152,7 @@ class Versor:
                     raise ValueError(errmsg.invalidUnitError)
 
         if ra is not None and dec is not None:
+            # Se vengono fornite le coordinate equatoriali, vengono opportunamente salvate in un attributo della classe.
             if unit == 'deg':
                 self.ra = ra * u.deg
                 self.dec = dec * u.deg
@@ -141,6 +166,9 @@ class Versor:
                 self.ra = ra
                 self.dec = dec
 
+            # Se le coordinate equatoriali fornite Non sono istanze della classe `astropy.coordinates.angles.Latitude` o
+            # `astropy.coordinates.angles.Longitude`, vengono convertite in queste coordinate. Tale conversione serve
+            # a semplificare le operazioni nell'esecuzione delle operazioni.
             if not isinstance(dec, Latitude):
                 self.dec = Latitude(self.dec)
             if not isinstance(ra, Longitude):
@@ -149,12 +177,17 @@ class Versor:
             ra = self.ra.rad
             dec = self.dec.rad
 
+            # Date le coordinate equatoriali, viene generato il versore che punti quelle coordinate. L'asse x è il punto
+            # vernale, l'asse z indica il Polo Nord Celeste e l'asse y è definito per completare la terna ortogonale.
             self.vsr = np.array([np.cos(dec)*np.cos(ra),
                                  np.cos(dec)*np.sin(ra),
                                  np.sin(dec)], dtype=np.float64)
         else:
+            # Se viene fornito il vettore, questo viene intanto normalizzato.
             self.vsr = np.copy(vector)/np.sqrt((vector**2).sum())
 
+            # Dalle coordinate si ricavano RA e DEC e si convertono in oggetti `Longitude` e `Latitude`,
+            # rispettivamente.
             self.ra = np.arctan2(self.vsr[1], self.vsr[0])
             self.dec = np.arctan2(self.vsr[2], np.sqrt(self.vsr[0]**2 + self.vsr[1]**2))
 
@@ -162,6 +195,11 @@ class Versor:
             self.dec = Latitude(np.rad2deg(self.dec) * u.deg)
 
     def rotate(self, axis, angle, unit='rad', copy=False):
+        """
+        Metodo della classe `Versor` che applica una matrice di rotazione intorno all'asse cartesiano `axis`, di un
+        angolo `angle` e, nel caso in cui `copy=True`, restituisce una copia del versore, altrimenti salva le modifiche
+        nell'oggetto a cui tal modifica è stata applicata.
+        """
         r_mat = RotationMatrix(axis, angle, unit)
         vsr = r_mat.mat.dot(self.vsr)
 
@@ -173,6 +211,11 @@ class Versor:
             self.vsr = vsr
 
     def rotate_inv(self, axis, angle, unit='rad', copy=False):
+        """
+        Metodo della classe `Versor` che applica una matrice di rotazione inversa intorno all'asse cartesiano `axis`,
+        di un angolo `angle` e, nel caso in cui `copy=True`, restituisce una copia del versore, altrimenti salva le
+        modifiche nell'oggetto a cui tal modifica è stata applicata.
+        """
         r_mat = RotationMatrix(axis, angle, unit)
         vsr = r_mat.inv.dot(self.vsr)
 
@@ -186,6 +229,10 @@ class Versor:
 
 class RotationMatrix:
     def __init__(self, axis, angle, unit='deg'):
+        """
+        Classe che definisce una matrice di rotazione di angolo `angle` intorno all'asse `axis`, che deve essere uno dei
+        tre assi coordinati.
+        """
         if axis.lower() not in ['x', 'y', 'z']:
             raise ValueError(errmsg.invalidAxisError)
         if unit not in ['deg', 'rad'] and\
@@ -211,6 +258,9 @@ class RotationMatrix:
 
     @staticmethod
     def matrix(axis, angle):
+        """
+        Metodo statico che definisce esplicitamente la matrice di rotazione, dato l'asse `axis`.
+        """
         if axis == 'x':
             return np.array([[1,             0,              0],
                              [0, np.cos(angle), -np.sin(angle)],
