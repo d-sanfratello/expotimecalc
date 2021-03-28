@@ -477,7 +477,7 @@ class Observation:
         #
         # Risulta quindi, dopo alcune manipolazioni, scrivere:
         #
-        #       HA = arccos(- tan(Lat) tan(DEC)
+        #       HA = arccos(- tan(Lat) tan(DEC))
         #
         # Tuttavia, conoscendo la durata del giorno siderale, è identico al tempo percorso tra la culminazione e il
         # momento del tramonto e il doppio di questo valore indica la permanenza sopra l'orizzonte.

@@ -15,9 +15,12 @@ import src.warnmsg as warnmsg
 import src.errmsg as errmsg
 
 
-Tsidday = (23.9345 * u.hour).to(u.day)
+Tsidday = (23.93447192 * u.hour).to(u.day) # Expl. Suppl. p698 (Sidereal year in 1990)
 Tsidyear = 365.256363004 * u.day  # https://hpiers.obspm.fr/eop-pc/models/constants.html
-Tprec = 25770 * Tsidyear  # DOI:10.1016/j.pss.2006.06.003 and DOI:10.1051/0004-6361:20021912
+
+# DOI:10.1016/j.pss.2006.06.003 and DOI:10.1051/0004-6361:20021912
+Tprec = ((1/(50287.9226200 * u.arcsec / (1000 * u.year))).to(u.year/u.deg) * 360 * u.deg).to(u.day)
+
 Omegasidmoon = (2.661699489e-6 * u.rad / u.s).to(u.rad / u.d)  # Expl. Suppl. p701 (Revolution frequency of Moon)
 
 moon_incl_to_ecliptic = 5.145396 * u.deg  # Expl. Suppl. p701
