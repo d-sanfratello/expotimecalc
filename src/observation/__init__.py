@@ -460,7 +460,7 @@ class Observation:
             elif target_obstime.dec * location.lat <= 0:
                 return 0 * u.hour
         # Con una metodologia analoga a quella utilizzata (e spiegata) prima per la stima della qualità
-        # dell'osservazione, si calcola la visibilità di un target entro una certa distanza zenitale. In un sistema di
+        # dell'osservazione, si calcola la visibilità di un target entro una distanza zenitale di 90°. In un sistema di
         # coordinate alt-az, si definiscono:
         #   * Z, P: rispettivamente lo zenith e il Polo Nord Celeste;
         #   * F: il punto del tramonto dell'oggetto.

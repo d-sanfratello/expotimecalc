@@ -25,10 +25,6 @@ class Location:
         Metodo di classe per effettuare il parsing di una stringa, che serve a determinare se si tratta di latitudine N
         o S o di longitudine E o W, e assegnare il segno opportuno. Viene indicata la stringa e quali lettere sono da
         considerarsi per le coordinate positive e per quelle negative.
-        :param coord_string:
-        :param coord_letter_pos:
-        :param coord_letter_neg:
-        :return:
         """
         if (_ := coord_string.lower().find(coord_letter_pos.lower())) >= 0:
             # Se trova la lettera per le coordinate positive
