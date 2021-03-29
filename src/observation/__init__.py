@@ -124,7 +124,7 @@ class Observation:
             raise NotImplementedError(errmsg.epochNotImplemented)
 
         # Viene calcolata la posizione del target alla data di osservazione
-        target_obstime = target.precession_at_date(obstime)
+        target_obstime = target.observe_at_date(obstime)
 
         # Viene calcolato l'angolo orario, ricordando che:
         #
@@ -148,7 +148,7 @@ class Observation:
             raise NotImplementedError(errmsg.epochNotImplemented)
 
         # Viene calcolata la posizione del target alla data di osservazione
-        target_obstime = target.precession_at_date(obstime)
+        target_obstime = target.observe_at_date(obstime)
 
         # Viene calcolato l'angolo orario del target utilizzando il metodo di classe `Observation.calculate_ha` e la
         # distanza dallo zenith.
@@ -221,7 +221,7 @@ class Observation:
 
         # Vengono ricavati i versori che indicano la posizione in cielo del target e dello zenith alla data, chiamando
         # gli opportuni metodi.
-        target_vsr = target.precession_at_date(obstime).vsr
+        target_vsr = target.observe_at_date(obstime).vsr
         zenith_vsr = location.zenith_at_date(obstime, axis='z', copy=True).vsr
 
         # Viene effettuata la proiezione del versore del target sullo zenith e viene calcolato l'arccos di questa
@@ -340,7 +340,7 @@ class Observation:
         warnings.warn(warnmsg.airmassWarning)
 
         # Calcolo dei vettori indicativi del target e dello zenith alla data.
-        target_vsr = target.precession_at_date(obstime).vsr
+        target_vsr = target.observe_at_date(obstime).vsr
         zenith_vsr = location.zenith_at_date(obstime, axis='z', copy=True).vsr
 
         if (ps := zenith_vsr.dot(target_vsr)) > 0:
@@ -362,7 +362,7 @@ class Observation:
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
 
         # Viene calcolata la posizione del target alla data.
-        target_obstime = target.precession_at_date(obstime)
+        target_obstime = target.observe_at_date(obstime)
 
         # Se declinazione e latitudine sono discordi in segno (target sotto l'orizzonte) e |DEC| >= |Lat|, il target è
         # considerato invisibile e la funzione ritorna un NoneType.
@@ -379,7 +379,7 @@ class Observation:
             obstime = Time(int(obstime.mjd), format='mjd', scale='utc')
             obstime.format = 'iso'
 
-            target_obstime = target.precession_at_date(obstime)
+            target_obstime = target.observe_at_date(obstime)
             zenith_obstime = location.zenith_at_date(obstime, axis='z', copy=True)
 
             sidday_factor = Tsidday / (2 * np.pi * u.rad).to(u.deg)
@@ -400,7 +400,7 @@ class Observation:
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
 
         # Viene calcolata la posizione del target alla data.
-        target_obstime = target.precession_at_date(obstime)
+        target_obstime = target.observe_at_date(obstime)
 
         # Se il target è circumpolare o non visibile, viene restituito un Nonetype.
         if target_obstime.dec >= location.lat or target_obstime.dec <= -location.lat:
@@ -425,7 +425,7 @@ class Observation:
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
 
         # Viene calcolata la posizione del target alla data.
-        target_obstime = target.precession_at_date(obstime)
+        target_obstime = target.observe_at_date(obstime)
 
         # Se il target è circumpolare o non visibile, viene restituito un Nonetype.
         if target_obstime.dec >= location.lat or target_obstime.dec <= -location.lat:
@@ -451,7 +451,7 @@ class Observation:
         warnings.warn(warnmsg.visibilityWarning)
 
         # Viene calcolata la posizione del target alla data.
-        target_obstime = target.precession_at_date(obstime)
+        target_obstime = target.observe_at_date(obstime)
 
         # Se il target è circumpolare viene restituito il valore di 24h. Se invece non è visibile viene restituito 0h.
         if abs(target_obstime.dec) >= abs(location.lat):
@@ -502,7 +502,7 @@ class Observation:
         reference = cls.equinoxes[epoch_eq]
 
         # Viene calcolata la posizione del target alla data.
-        target_obstime = target.precession_at_date(obstime)
+        target_obstime = target.observe_at_date(obstime)
 
         # Se declinazione e latitudine sono discordi in segno (target sotto l'orizzonte) e |DEC| >= |Lat|, il target è
         # considerato invisibile e la funzione ritorna un NoneType.
@@ -511,13 +511,19 @@ class Observation:
         # Il giorno migliore per l'osservazione di un corpo celeste è quando il sole ha RA pari alla RA del target + 12h
         # Per ricavare tale data, si considera il sole in culminazione, con ascensione retta pari a RA + 12h. A questo
         # valore si sottrae il GMST all'equinozio di riferimento e la latitudine, oltre che il contributo, in RA, del
-        # fuso orario. Per il giorno ricavato, si calcola la culminazione alla data, con il metodo di classe descritto
-        # prima.
+        # fuso orario. Data la periodicità dell'arcotangente, se il Sole risulta sopra l'orizzonte alla data trovata, si
+        # aggiunge mezzo anno siderale all'intervallo di tempo ricavato dal calcolo. Per il giorno trovato, si calcola
+        # la culminazione alla data, con il metodo di classe descritto prima.
         else:
             sidyear_factor = (Tsidyear.value/(2*np.pi))
-            time = target_obstime.ra + 180 * u.deg - reference.GMST.rad - location.lon
-            time -= location.timezone * 15 * u.deg/u.hour
-            time = sidyear_factor * time.rad * u.day
+
+            time = np.arctan(np.tan(target_obstime.ra - 12 * u.hourangle)/np.cos(target.axial_tilt(obstime))).to(u.rad)
+            time += location.timezone * 15 * u.deg/u.hour
+            time *= sidyear_factor * u.day/u.rad
+
+            sun = Sun(obstime + time)
+            if cls.calculate_alt(sun, location, obstime + time) >= 0:
+                time += 0.5 * Tsidyear
 
             best_target = SkyLocation(ra=target.ra, dec=target.dec, obstime=time+obstime)
 

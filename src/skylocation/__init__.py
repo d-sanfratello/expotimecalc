@@ -95,9 +95,8 @@ class SkyLocation(Location):
 
         # Se è fornita una data, inizializzo le coordinate a quella data.
         if obstime is not None:
-            vector_obstime = self.precession_at_date(obstime)
-            self.ra = vector_obstime.ra
-            self.dec = vector_obstime.dec
+            self.ra = ra
+            self.dec = dec
 
             self.convert_to_epoch(obstime)
         else:
@@ -136,7 +135,7 @@ class SkyLocation(Location):
         self.ra_epoch = self.vector_epoch.ra
         self.dec_epoch = self.vector_epoch.dec
 
-    def precession_at_date(self, obstime):
+    def observe_at_date(self, obstime):
         """
         Metodo che applica l'effetto della precessione degli equinozi ad una certa data. Al momento non è possibile
         inserire epoche diverse.
@@ -163,7 +162,7 @@ class SkyLocation(Location):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
 
         self.obstime = obstime
-        self.vector_obstime = self.precession_at_date(obstime)
+        self.vector_obstime = self.observe_at_date(obstime)
         self.ra = self.vector_obstime.ra
         self.dec = self.vector_obstime.dec
 
