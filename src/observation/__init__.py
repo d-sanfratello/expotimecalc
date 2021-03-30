@@ -253,6 +253,7 @@ class Observation:
             raise TypeError(errmsg.notTwoTypesError.format('parameter', 'astropy.units.quantity.Quantity', 'int'))
         if not isinstance(interval, Quantity):
             raise TypeError(errmsg.notTypeError.format('interval', 'astropy.units.quanrtity.Quantity'))
+
         if not isinstance(par_type, str):
             raise TypeError(errmsg.notTypeError.format('par_type', 'string'))
         elif isinstance(parameter, Quantity) and par_type not in ['alt', 'z']:
@@ -301,10 +302,12 @@ class Observation:
         # Tuttavia, conoscendo la durata del giorno siderale, è identico al tempo percorso tra la culminazione e il
         # raggiungimento della z_max indicata e il doppio di questo valore indica la permanenza sopra tale altezza.
         else:
+            target_obstime = target.observe_at_date(obstime)
+
             sidday_factor = Tsidday.to(u.hour) / (2 * np.pi * u.rad)
 
-            time_above = np.cos(z_max) - np.sin(location.lat) * np.sin(target.dec)
-            time_above /= np.cos(location.lat * np.cos(target.dec))
+            time_above = np.cos(z_max) - np.sin(location.lat) * np.sin(target_obstime.dec)
+            time_above /= (np.cos(location.lat) * np.cos(target_obstime.dec))
             time_above = 2 * sidday_factor * np.arccos(time_above)
 
             return (time_above >= interval), time_above
@@ -436,6 +439,39 @@ class Observation:
         culm_t = cls.calculate_culmination(target, location, obstime)
         visibility_window = cls.calculate_visibility(target, location, obstime)
         return culm_t - visibility_window / 2
+
+    @classmethod
+    def calculate_twilight(cls, sun, location, obstime, twilight='naval'):
+        if not isinstance(sun, SkyLocation):
+            raise TypeError(errmsg.notTypeError.format('sun', 'src.skylocation.sun.Sun'))
+        if not isinstance(location, Location):
+            raise TypeError(errmsg.notTypeError.format('location', 'src.location.Location'))
+        if not isinstance(obstime, Time):
+            raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
+
+        if not isinstance(twilight, str):
+            raise TypeError(errmsg.notTypeError.format('twilight', 'string'))
+        elif twilight.lower() not in ['naval', 'astronomical']:
+            raise ValueError(errmsg.twilightError)
+
+        if twilight.lower() == 'naval':
+            alt = -12 * u.deg
+        elif twilight.lower() == 'astronomical':
+            alt = -18 * u.deg
+
+        obstime = Time(int(obstime.mjd), format='mjd', scale='utc')
+        obstime.format = 'iso'
+
+        sun_obstime = sun.observe_at_date(obstime)
+
+        sun_culm = cls.calculate_culmination(sun, location, obstime)
+
+        sidday_factor = Tsidday.to(u.hour) / (2 * np.pi * u.rad)
+        half_over_alt_time = np.sin(alt) - np.sin(location.lat) * np.sin(sun_obstime.dec)
+        half_over_alt_time /= (np.cos(location.lat) * np.cos(sun_obstime.dec))
+        half_over_alt_time = 2 * sidday_factor * np.arccos(time_above)
+
+        return sun_culm - half_over_alt_time, sun_culm + half_over_alt_time
 
     @classmethod
     def calculate_visibility(cls, target, location, obstime):
