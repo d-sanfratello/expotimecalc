@@ -199,13 +199,13 @@ class Observation:
             cos_az -= np.cos(location.lat - target_obstime.dec) * np.cos(zdist)
             cos_az /= np.sin(zdist) * np.sin(location.lat - target_obstime.dec)
 
-            return np.arccos(-cos_az).to(u.deg)
+            return Angle(np.arccos(-cos_az).to(u.deg))
         else:
             cos_az = np.sin(target_obstime.dec) ** 2 + np.cos(target_obstime.dec) ** 2 * np.cos(hangle)
             cos_az -= np.cos(location.lat - target_obstime.dec) * np.cos(zdist)
             cos_az /= np.sin(zdist) * np.sin(location.lat - target_obstime.dec)
 
-            return 360 * u.deg - np.arccos(-cos_az).to(u.deg)
+            return Angle(360 * u.deg - np.arccos(-cos_az).to(u.deg))
 
     @classmethod
     def calculate_alt(cls, target, location, obstime):
