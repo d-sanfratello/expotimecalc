@@ -362,7 +362,7 @@ class Observation:
         if not isinstance(location, Location):
             raise TypeError(errmsg.notTypeError.format('location', 'src.location.Location'))
         if not isinstance(obstime, Time):
-            raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
+            raise TypeError(errmsg.notTwoTypesError.format('obstime_midnight', 'src.time.Time', 'astropy.time.Time'))
 
         # Viene calcolata la posizione del target alla data.
         target_obstime = target.observe_at_date(obstime)
@@ -376,19 +376,22 @@ class Observation:
         # Dato che, alla culminazione, la RA del target indica anche il LST della località (per definizione di transito
         # al meridiano) è possibile calcolare il tempo necessario ad arrivare al transito come, a meno del fattore di
         # conversione del giorno siderale, la distanza tra la RA del target alla mezzanotte e lo zenith alla mezzanotte.
-        # Aggiungendo tale valore alla data, indicata alla mezzanotte, si ottiene la culminazione. Dato che il target
-        # ha HA < 0 prima della culminazione, viene aggiunto un angolo di 360° per ottenere la culminazione alla data.
+        # Aggiungendo tale valore alla data, indicata alla mezzanotte, si ottiene la culminazione. Se la culminazione
+        # avviene prima della data indicata, viene aggiunto un giorno siderale.
         else:
-            obstime = Time(int(obstime.mjd), format='mjd', scale='utc')
-            obstime.format = 'iso'
+            obstime_midnight = Time(int(obstime.mjd), format='mjd', scale='utc')
+            obstime_midnight.format = 'iso'
 
-            target_obstime = target.observe_at_date(obstime)
-            zenith_obstime = location.zenith_at_date(obstime, axis='z', copy=True)
+            target_obstime = target.observe_at_date(obstime_midnight)
+            zenith_obstime = location.zenith_at_date(obstime_midnight, axis='z', copy=True)
 
             sidday_factor = Tsidday / (2 * np.pi * u.rad).to(u.deg)
 
-            return obstime + (360*u.deg + target_obstime.ra - zenith_obstime.ra).to(u.deg) * sidday_factor
-            # what if target is ahead of LST? Doesn't this return the lowest point on apparent motion? Check.
+            delta_time = (target_obstime.ra - zenith_obstime.ra).to(u.deg) * sidday_factor
+            if (culm := obstime_midnight + delta_time).jd <= obstime.jd:
+                culm += Tsidday
+
+            return culm
 
     @classmethod
     def calculate_set_time(cls, target, location, obstime):
@@ -441,7 +444,11 @@ class Observation:
         return culm_t - visibility_window / 2
 
     @classmethod
-    def calculate_twilight(cls, sun, location, obstime, twilight='naval'):
+    def calculate_twilight(cls, sun, location, obstime, twilight='nautical'):
+        """
+        Metodo di classe per il calcolo di inizio e fine del crepuscolo navale ed astronomico. Dati sulle altezze di
+        definizione dei due crepuscoli ricavati da `https://www.weather.gov/fsd/twilight`
+        """
         if not isinstance(sun, SkyLocation):
             raise TypeError(errmsg.notTypeError.format('sun', 'src.skylocation.sun.Sun'))
         if not isinstance(location, Location):
@@ -451,27 +458,40 @@ class Observation:
 
         if not isinstance(twilight, str):
             raise TypeError(errmsg.notTypeError.format('twilight', 'string'))
-        elif twilight.lower() not in ['naval', 'astronomical']:
+        elif twilight.lower() not in ['nautical', 'astronomical']:
             raise ValueError(errmsg.twilightError)
 
-        if twilight.lower() == 'naval':
+        if twilight.lower() == 'nautical':
             alt = -12 * u.deg
         elif twilight.lower() == 'astronomical':
             alt = -18 * u.deg
 
-        obstime = Time(int(obstime.mjd), format='mjd', scale='utc')
+        # La data di osservazione viene modificata per essere in data giuliana. Questo perché, essendo le osservazioni
+        # notturne, permette di considerare la durata del giorno come dalle 12:00 alle 12:00 del giorno successivo. Se
+        # l'orario impostato è già oltre le 12:00 UTC, si calcola per la data giuliana modificata, così da includere la
+        # culminazione corretta.
+        if obstime.jd % 1 <= 0.5:
+            obstime = Time(int(obstime.mjd), format='mjd', scale='utc')
+        else:
+            obstime = Time(int(obstime.jd), format='jd', scale='utc')
         obstime.format = 'iso'
 
-        sun_obstime = sun.observe_at_date(obstime)
-
+        # In maniera analoga a quanto calcolate nei metodi `calculate_set_time` e `calculate_rise_time`, viene stimato
+        # l'orario della culminazione del Sole alla data.
         sun_culm = cls.calculate_culmination(sun, location, obstime)
 
+        # Per migliorare la precisione, si reimposta l'orario con quello di culminazione.
+        sun_obstime = sun.observe_at_date(sun_culm)
+
+        # Analogamente al metodo `estimate_quality`, si calcola quanto tempo il Sole rimane al di sopra della soglia
+        # impostata.
         sidday_factor = Tsidday.to(u.hour) / (2 * np.pi * u.rad)
         half_over_alt_time = np.sin(alt) - np.sin(location.lat) * np.sin(sun_obstime.dec)
         half_over_alt_time /= (np.cos(location.lat) * np.cos(sun_obstime.dec))
-        half_over_alt_time = 2 * sidday_factor * np.arccos(time_above)
+        half_over_alt_time = sidday_factor * np.arccos(half_over_alt_time)
 
-        return sun_culm - half_over_alt_time, sun_culm + half_over_alt_time
+        # Viene restituita la culminazione alla data, il tempo dell'inizio del prossimo crepuscolo e la sua fine.
+        return sun_culm, sun_culm + half_over_alt_time, sun_culm + Tsidday - half_over_alt_time
 
     @classmethod
     def calculate_visibility(cls, target, location, obstime):
