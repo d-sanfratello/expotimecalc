@@ -125,7 +125,7 @@ class SkyLocation(Location):
         # precessione degli equinozi, riportando poi la posizione in coordinate equatoriali. Dato che non è considerata
         # la nutazione, la rotazione intorno all'asse x è, di fatto, un semplice cambio di base.
         self.vector_epoch = self.vector_epoch.rotate_inv('x', self.axial_tilt(old_eq.time), copy=True)\
-            .rotate_inv('z', self.equinox_prec(obstime, self.epoch_rel_eq[epoch]), copy=True)\
+            .rotate('z', self.equinox_prec(obstime, self.epoch_rel_eq[epoch]), copy=True)\
             .rotate('x', self.axial_tilt(epoch_eq.time), copy=True)
 
         self.epoch = Time(epoch).utc
