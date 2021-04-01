@@ -15,6 +15,8 @@ from src.time import Time
 
 from src import Tsidday
 from src import Tsidyear
+from src import Jyear
+from src import Tprec
 from src import Equinox2000
 
 from src import errmsg
@@ -362,7 +364,7 @@ class Observation:
         if not isinstance(location, Location):
             raise TypeError(errmsg.notTypeError.format('location', 'src.location.Location'))
         if not isinstance(obstime, Time):
-            raise TypeError(errmsg.notTwoTypesError.format('obstime_midnight', 'src.time.Time', 'astropy.time.Time'))
+            raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
 
         # Viene calcolata la posizione del target alla data.
         target_obstime = target.observe_at_date(obstime)
@@ -371,24 +373,31 @@ class Observation:
         # considerato invisibile e la funzione ritorna un NoneType.
         if target_obstime.dec * location.lat <= 0 and abs(target_obstime.dec) >= abs(location.lat):
             return None
-        # Se il target è visibile (o circumpolare), viene calcolata la posizione del target alla mezzanotte della data
-        # indicata, a cui si ricalcolano le posizioni del target e dello zenith.
+        # Se il target è visibile (o circumpolare), viene calcolata la posizione del target alla data giuliana intera
+        # più vicina a quella indicata, in cui ricalcoliamo sia le posizioni del target che dello zenith.
         # Dato che, alla culminazione, la RA del target indica anche il LST della località (per definizione di transito
         # al meridiano) è possibile calcolare il tempo necessario ad arrivare al transito come, a meno del fattore di
         # conversione del giorno siderale, la distanza tra la RA del target alla mezzanotte e lo zenith alla mezzanotte.
-        # Aggiungendo tale valore alla data, indicata alla mezzanotte, si ottiene la culminazione. Se la culminazione
-        # avviene prima della data indicata, viene aggiunto un giorno siderale.
+        # Aggiungendo tale valore alla data, indicata alla mezzanotte, si ottiene la culminazione. Se al momento della
+        # culminazione il target è sotto l'orizzonte, si suppone di aver trovato il punto di altezza minima e si somma
+        # mezzo giorno siderale. Se la culminazione così definita avviene prima della data indicata, viene aggiunto un
+        # giorno siderale.
         else:
-            obstime_midnight = Time(int(obstime.mjd), format='mjd', scale='utc')
-            obstime_midnight.format = 'iso'
+            obstime_midday = Time(int(np.round(obstime.jd)), format='jd', scale='utc')
+            obstime_midday.format = 'iso'
 
-            target_obstime = target.observe_at_date(obstime_midnight)
-            zenith_obstime = location.zenith_at_date(obstime_midnight, axis='z', copy=True)
+            target_obstime = target.observe_at_date(obstime_midday)
+            zenith_obstime = location.zenith_at_date(obstime_midday, axis='z', copy=True)
 
             sidday_factor = Tsidday / (2 * np.pi * u.rad).to(u.deg)
 
             delta_time = (target_obstime.ra - zenith_obstime.ra).to(u.deg) * sidday_factor
-            if (culm := obstime_midnight + delta_time).jd <= obstime.jd:
+
+            culm = obstime_midday + delta_time
+
+            if cls.calculate_alt(target, location, culm) < 0:
+                culm += 0.5 * Tsidday
+            if culm.jd <= obstime.jd:
                 culm += Tsidday
 
             return culm
@@ -471,9 +480,9 @@ class Observation:
         # l'orario impostato è già oltre le 12:00 UTC, si calcola per la data giuliana modificata, così da includere la
         # culminazione corretta.
         if obstime.jd % 1 <= 0.5:
-            obstime = Time(int(obstime.mjd), format='mjd', scale='utc')
-        else:
             obstime = Time(int(obstime.jd), format='jd', scale='utc')
+        else:
+            obstime = Time(int(obstime.mjd), format='mjd', scale='utc')
         obstime.format = 'iso'
 
         # In maniera analoga a quanto calcolate nei metodi `calculate_set_time` e `calculate_rise_time`, viene stimato
@@ -542,7 +551,7 @@ class Observation:
             return 2 * sidday_factor * np.arccos(- np.tan(target_obstime.dec.rad) * np.tan(location.lat))
 
     @classmethod
-    def calculate_best_day(cls, target, location, obstime, epoch_eq='equinoxJ2000'):
+    def calculate_best_day(cls, target, location, obstime):
         """
         Metodo di classe per il calcolo del miglior periodo dell'anno per l'osservazione di un target.
         """
@@ -552,10 +561,6 @@ class Observation:
             raise TypeError(errmsg.notTypeError.format('location', 'src.location.Location'))
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
-        if epoch_eq != 'equinoxJ2000':
-            raise NotImplementedError(errmsg.epochNotImplemented)
-
-        reference = cls.equinoxes[epoch_eq]
 
         # Viene calcolata la posizione del target alla data.
         target_obstime = target.observe_at_date(obstime)
@@ -565,25 +570,38 @@ class Observation:
         if target_obstime.dec * location.lat <= 0 and abs(target_obstime.dec) >= abs(location.lat):
             return None
         # Il giorno migliore per l'osservazione di un corpo celeste è quando il sole ha RA pari alla RA del target + 12h
-        # Per ricavare tale data, si considera il sole in culminazione, con ascensione retta pari a RA + 12h. A questo
-        # valore si sottrae il GMST all'equinozio di riferimento e la latitudine, oltre che il contributo, in RA, del
-        # fuso orario. Data la periodicità dell'arcotangente, se il Sole risulta sopra l'orizzonte alla data trovata, si
-        # aggiunge mezzo anno siderale all'intervallo di tempo ricavato dal calcolo. Per il giorno trovato, si calcola
-        # la culminazione alla data, con il metodo di classe descritto prima.
+        # Per ricavare tale data, si calcola la frazione di angolo giro (quindi di anno siderale) che manca per avere il
+        # Sole e il target in opposizione. Il calcolo viene eseguito una seconda volta rispetto alla data ottenuta con
+        # la prima iterazione per correggere per gli effetti della precessione durante l'anno (comunque inferiori a
+        # 50"). Corretta la data, viene calcolato il momento esatto della culminazione del target alla data, con il
+        # metodo di classe descritto prima.
         else:
-            sidyear_factor = (Tsidyear.value/(2*np.pi))
+            sun = Sun(obstime)
 
-            time = np.arctan(np.tan(target_obstime.ra - 12 * u.hourangle)/np.cos(target.axial_tilt(obstime))).to(u.rad)
-            time += location.timezone * 15 * u.deg/u.hour
-            time *= sidyear_factor * u.day/u.rad
+            factor_sidyear = Tsidyear / (360 * u.deg)
 
-            sun = Sun(obstime + time)
-            if cls.calculate_alt(sun, location, obstime + time) >= 0:
-                time += 0.5 * Tsidyear
+            if sun.ra >= target_obstime.ra:
+                if (delta_phi := sun.ra - target_obstime.ra) <= 180 * u.deg:
+                    delta_time = factor_sidyear * (180 * u.deg - delta_phi)
+                else:
+                    delta_time = factor_sidyear * (540 * u.deg - delta_phi)
+            else:
+                if (delta_phi := target_obstime.ra - sun.ra) <= 180 * u.deg:
+                    delta_time = factor_sidyear * (180 * u.deg + delta_phi)
+                else:
+                    delta_time = factor_sidyear * (delta_phi - 180 * u.deg)
 
-            best_target = SkyLocation(ra=target.ra, dec=target.dec, obstime=time+obstime)
+            sun_besttime = sun.observe_at_date(obstime + delta_time)
+            target_besttime = target.observe_at_date(obstime + delta_time)
 
-            return cls.calculate_culmination(best_target, location, time + obstime)
+            if sun_besttime.ra >= target_besttime.ra:
+                delta_phi = sun_besttime.ra - target_besttime.ra
+                delta_time_1 = factor_sidyear * (180 * u.deg - delta_phi)
+            else:
+                delta_phi = target_besttime.ra - sun_besttime.ra
+                delta_time_1 = factor_sidyear * (delta_phi - 180 * u.deg)
+
+            return cls.calculate_culmination(target, location, obstime + delta_time + delta_time_1)
 
     def plot_altaz_onday(self, interval=15*u.min):
         interval = interval.to(u.hour)
