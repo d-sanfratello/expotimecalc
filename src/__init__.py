@@ -17,6 +17,7 @@ import src.errmsg as errmsg
 
 Tsidday = (23.93447192 * u.hour).to(u.day) # Expl. Suppl. p698 (Sidereal year in 1990)
 Tsidyear = 365.256363004 * u.day  # https://hpiers.obspm.fr/eop-pc/models/constants.html
+Jyear = 365.25 * u.day
 
 # DOI:10.1016/j.pss.2006.06.003 and DOI:10.1051/0004-6361:20021912
 Tprec = ((1/(50287.9226200 * u.arcsec / (1000 * u.year))).to(u.year/u.deg) * 360 * u.deg).to(u.day)
