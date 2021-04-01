@@ -479,7 +479,7 @@ class Observation:
         # notturne, permette di considerare la durata del giorno come dalle 12:00 alle 12:00 del giorno successivo. Se
         # l'orario impostato è già oltre le 12:00 UTC, si calcola per la data giuliana modificata, così da includere la
         # culminazione corretta.
-        if obstime.jd % 1 <= 0.5:
+        if obstime.jd % 1 >= 0.5:
             obstime = Time(int(obstime.jd), format='jd', scale='utc')
         else:
             obstime = Time(int(obstime.mjd), format='mjd', scale='utc')
