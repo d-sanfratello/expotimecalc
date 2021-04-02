@@ -377,8 +377,8 @@ class Observation:
         # più vicina a quella indicata, in cui ricalcoliamo sia le posizioni del target che dello zenith.
         # Dato che, alla culminazione, la RA del target indica anche il LST della località (per definizione di transito
         # al meridiano) è possibile calcolare il tempo necessario ad arrivare al transito come, a meno del fattore di
-        # conversione del giorno siderale, la distanza tra la RA del target alla mezzanotte e lo zenith alla mezzanotte.
-        # Aggiungendo tale valore alla data, indicata alla mezzanotte, si ottiene la culminazione. Se al momento della
+        # conversione del giorno siderale, la distanza tra la RA del target al mezzogiorno e lo zenith al mezzogiorno.
+        # Aggiungendo tale valore alla data, indicata al mezzogiorno, si ottiene la culminazione. Se al momento della
         # culminazione il target è sotto l'orizzonte, si suppone di aver trovato il punto di altezza minima e si somma
         # mezzo giorno siderale. Se la culminazione così definita avviene prima della data indicata, viene aggiunto un
         # giorno siderale.
