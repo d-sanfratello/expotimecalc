@@ -251,8 +251,9 @@ class Observation:
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
         if not isinstance(sun, Sun):
             raise TypeError(errmsg.notTypeError.format('sun', 'src.skylocation.sun.Sun'))
-        if not isinstance(parameter, (Quantity, int)):
-            raise TypeError(errmsg.notTwoTypesError.format('parameter', 'astropy.units.quantity.Quantity', 'int'))
+        if not isinstance(parameter, (Quantity, int, float)):
+            raise TypeError(errmsg.notThreeTypesError.format('parameter',
+                                                             'astropy.units.quantity.Quantity', 'int', 'float'))
         if not isinstance(interval, Quantity):
             raise TypeError(errmsg.notTypeError.format('interval', 'astropy.units.quanrtity.Quantity'))
 
@@ -271,7 +272,7 @@ class Observation:
             z_max = parameter
         elif par_type == 'airmass':
             # arcsec(1/x) = arccos(x)
-            z_max = np.arccos(1/parameter)
+            z_max = (np.arccos(1/parameter) * u.rad).to(u.deg)
 
         # Con il metodo di classe opportuno, viene calcolata la distanza dallo zenith alla culminazione, anche questa
         # ottenuta da uno specifico metodo di classe. Se la distanza alla culminazione è maggiore della distanza minima
