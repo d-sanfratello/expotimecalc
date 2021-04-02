@@ -16,8 +16,10 @@ from astropy.visualization import quantity_support
 time_support(scale='utc', format='iso', simplify=True)
 quantity_support()
 
-
+# Funzione per inizializzare gli array temporali
 def init_times(time=None):
+    # Se non viene fornito nessun tempo, utilizza una data di default, altrimenti genera 14 ore con a metà la data
+    # indicata.
     if time is None:
         obstime_base = Time('2021-04-02 17:00:00')
         hour_steps = np.arange(0, 14, step=0.25) * u.hour
@@ -31,16 +33,21 @@ def init_times(time=None):
 
     return obstimes
 
-
+# Funzione che genera i plot
 def plot_altaz_onday(targets, location, obstimes):
     times = Time([t.mjd for t in obstimes], format='mjd')
 
+    # esegue in ciclo dentro un dizionario di target passato come argomento.
     for key in targets.keys():
+        # selezione del target
         target = targets[key]
 
+        # calcolo di altezza e azimut secondo i metodi della classe Observation.
         alt = [Observation.calculate_alt(target, location, t).deg for t in obstimes] * u.deg
         az = [Observation.calculate_az(target, location, t).deg for t in obstimes] * u.deg
 
+        # vengono generati il Sole e la Luna e ne vengono calcolate altezza e azimut (per la Luna) e alba, tramonto e
+        # crepuscoli (per il Sole)
         sun = Sun(obstimes[0])
         moon = Moon(obstimes[0])
 
@@ -57,22 +64,27 @@ def plot_altaz_onday(targets, location, obstimes):
 
         fig.suptitle(targets[key].name + " alla data del {}".format(obstimes[0].iso[:-7]))
 
-        # subplot1
+        ## subplot1
+        # plot dell'altezza sull'orizzonte
         ax1 = plt.subplot2grid((3, 1), (0, 0))
         ax1.grid()
         ax1.plot(times, alt, 'k-')
         ax1.plot(times, alt_moon, 'k-.')
 
+        # linee dei crepuscoli. I label sono definiti dopo.
         plt.vlines(sun_naut_twi_0[0], -90, 90, linestyles='dashed', colors='b')
         plt.vlines(sun_naut_twi_0[1], -90, 90, linestyles='dashed', colors='b')
         plt.vlines(sun_astr_twi_0[0], -90, 90, linestyles='solid', colors='b')
         plt.vlines(sun_astr_twi_0[1], -90, 90, linestyles='solid', colors='b')
 
+        # plot dell'alba e del tramonto del Sole
         plt.vlines(sun_set, -90, 90, linestyles='dotted', colors='b', linewidth=1)
         plt.vlines(sun_rise, -90, 90, linestyles='dotted', colors='b', linewidth=1)
 
+        # definiti i limiti come tra il crepuscolo astronomico e lo zenit.
         ax1.set_ylim(-18, 90)
 
+        # gestione dei tick delle altezze sull'orizzonte.
         ax1.yaxis.set_ticks(np.array([-18, 0, 30, 60, 90]))
         ax1.hlines(-12, min(times), max(times), linestyles='dashed', colors='b', linewidth=1)
         ax1.hlines(0, min(times), max(times), linestyles='dotted', colors='b', linewidth=1)
@@ -83,6 +95,7 @@ def plot_altaz_onday(targets, location, obstimes):
         ax1.set_xlabel('')
         ax1.set_ylabel('Alt [deg]')
 
+        # aggiunta dei tick per le airmass
         ax1_ = ax1.twinx()
         ax1_.set_ylim(ax1.get_ylim())
         ticks_loc = ax1.get_yticks().tolist()
@@ -95,7 +108,8 @@ def plot_altaz_onday(targets, location, obstimes):
         ax1_.set_yticklabels(ax1_ticks)
         ax1_.set_ylabel('Airmass')
 
-        # subplot2
+        ## subplot2
+        # plot dell'azimut
         ax2 = plt.subplot2grid((3, 1), (1, 0), rowspan=2)
         ax2.grid()
         ax2.plot(times, az, 'k-')
@@ -103,16 +117,19 @@ def plot_altaz_onday(targets, location, obstimes):
                  label='Moon - phase = {:.2}$\\rightarrow${:.2}'.format(moon.calculate_moon_phase(sun, times[0]),
                                                                         moon.calculate_moon_phase(sun, times[-1])))
 
+        # linee dei crepuscoli. I label sono definiti dopo.
         plt.vlines(sun_naut_twi_0[0], 0, 360, linestyles='dashed', colors='b', label='Naut. twilight')
         plt.vlines(sun_naut_twi_0[1], 0, 360, linestyles='dashed', colors='b')
         plt.vlines(sun_astr_twi_0[0], 0, 360, linestyles='solid', colors='b', label='Astr. twilight')
         plt.vlines(sun_astr_twi_0[1], 0, 360, linestyles='solid', colors='b')
 
+        # plot dell'alba e del tramonto del Sole
         plt.vlines(sun_set, 0, 360, linestyles='dotted', colors='b', linewidth=1, label='Sun set/rise')
         plt.vlines(sun_rise, 0, 360, linestyles='dotted', colors='b', linewidth=1)
 
         ax2.legend(loc='best')
 
+        # gestione dei tick degli azimut.
         ax2.set_ylim(0, 360)
         ax2.yaxis.set_ticks(np.linspace(0, 360, 13))
         ax2.xaxis.set_major_locator(plt.MaxNLocator(len(times) - 1))
@@ -120,6 +137,7 @@ def plot_altaz_onday(targets, location, obstimes):
         ax2.xaxis.set_tick_params(rotation=80)
         ax2.set_ylabel('Az [deg]')
 
+        # aggiunta dei tick per i punti cardinali.
         ax2_ = ax2.twinx()
         ax2_.set_ylim(ax2.get_ylim())
         ticks_loc = ax2.get_yticks().tolist()
@@ -145,17 +163,21 @@ def plot_altaz_onday(targets, location, obstimes):
 
 
 if __name__ == "__main__":
+    # Pisa
     location = Location(locstring='43.721045 10.407737')
 
+    # Lista di target. iUMa è circumpolare mentre aCar è invisibile da Pisa.
     targets = {'iUMa': SkyLocation(locstring="8h59m12.45362s 48d2m30.5741s", name='$\iota$UMa'),
                'aLyr': SkyLocation(locstring="18h36m56.33635s 38d47m1.2802s", name='Vega'),
                'aOri': SkyLocation(locstring='5h55m10.30536s 7d24m25.4304s', name='Betelgeuse'),
                'aCar': SkyLocation(locstring="6h23m57.10988s -52d41m44.3810s", name="Canopus")}
 
+    # Inizializzazione dei tempi e plot dei primi quattro grafici
     obstimes = init_times()
 
     plot_altaz_onday(targets, location, obstimes)
 
+    # calcolo delle migliori date osservative per i tre target visibili dalla località impostata.
     best_iUma = Observation.calculate_best_day(targets['iUMa'], location, obstimes[0])
     best_aLyr = Observation.calculate_best_day(targets['aLyr'], location, obstimes[0])
     best_aOri = Observation.calculate_best_day(targets['aOri'], location, obstimes[0])
@@ -163,7 +185,8 @@ if __name__ == "__main__":
     print('best {}:{}'.format(targets['iUMa'].name, best_iUma))
     print('best {}:{}'.format(targets['aLyr'].name, best_aLyr))
     print('best {}:{}'.format(targets['aOri'].name, best_aOri))
-    
+
+    # Calcolo della qualità di osservazione alle date trovate prima.
     sun = Sun(best_iUma)
     print('quality {}:{}'.format(targets['iUMa'].name,
                                  Observation.estimate_quality(targets['iUMa'], location, best_iUma, sun,
@@ -181,13 +204,17 @@ if __name__ == "__main__":
     obstimes_aLyr = init_times(best_aLyr)
     obstimes_aOri = init_times(best_aOri)
 
+    # Plot alle date di migliore osservazione, per i tre target visibili da Pisa.
     plot_altaz_onday({'1': targets['iUMa']}, location, obstimes_iUma)
     plot_altaz_onday({'2': targets['aLyr']}, location, obstimes_aLyr)
     plot_altaz_onday({'3': targets['aOri']}, location, obstimes_aOri)
 
+    # Calcolo del periodo di rivoluzione lunare. ~27.32d
     from src import Omegasidmoon
     Tsidmoon = 1 / Omegasidmoon * 2 * np.pi * u.rad
 
+    # Nel caso di aOri, la migliore data comportava una luna piena. Calcolo di +-1w e +-2w, con un offset sugli orari
+    # per migliorare la visibilità del grafico.
     obstimes_aOri = init_times(best_aOri - Tsidmoon / 4 - 3 * u.hour)
     print('quality {}:{}'.format(targets['aOri'].name,
                                  Observation.estimate_quality(targets['aOri'], location,
