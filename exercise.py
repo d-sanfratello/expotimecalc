@@ -49,8 +49,8 @@ def plot_altaz_onday(targets, location, obstimes):
         sun_naut_twi_0 = Observation.calculate_twilight(sun, location, obstimes[0], twilight='nautical')[1:]
         sun_astr_twi_0 = Observation.calculate_twilight(sun, location, obstimes[0], twilight='astronomical')[1:]
 
-        sun_naut_twi_1 = Observation.calculate_twilight(sun, location, obstimes[-1], twilight='nautical')[1:]
-        sun_astr_twi_1 = Observation.calculate_twilight(sun, location, obstimes[-1], twilight='astronomical')[1:]
+        sun_set = Observation.calculate_set_time(sun, location, obstimes[0] - 6 * u.h)
+        sun_rise = Observation.calculate_rise_time(sun, location, obstimes[-1])
 
         fig = plt.figure(figsize=(8, 8))
 
@@ -67,10 +67,8 @@ def plot_altaz_onday(targets, location, obstimes):
         plt.vlines(sun_astr_twi_0[0], -90, 90, linestyles='solid', colors='b')
         plt.vlines(sun_astr_twi_0[1], -90, 90, linestyles='solid', colors='b')
 
-        plt.vlines(sun_naut_twi_1[0], -90, 90, linestyles='dashed', colors='b')
-        plt.vlines(sun_naut_twi_1[1], -90, 90, linestyles='dashed', colors='b')
-        plt.vlines(sun_astr_twi_1[0], -90, 90, linestyles='solid', colors='b')
-        plt.vlines(sun_astr_twi_1[1], -90, 90, linestyles='solid', colors='b')
+        plt.vlines(sun_set, -90, 90, linestyles='dotted', colors='b', linewidth=1)
+        plt.vlines(sun_rise, -90, 90, linestyles='dotted', colors='b', linewidth=1)
 
         ax1.set_ylim(-90, 90)
         ax1.yaxis.set_ticks(np.linspace(-90, 90, 7))
@@ -92,10 +90,8 @@ def plot_altaz_onday(targets, location, obstimes):
         plt.vlines(sun_astr_twi_0[0], 0, 360, linestyles='solid', colors='b', label='Astr. twilight')
         plt.vlines(sun_astr_twi_0[1], 0, 360, linestyles='solid', colors='b')
 
-        plt.vlines(sun_naut_twi_1[0], 0, 360, linestyles='dashed', colors='b')
-        plt.vlines(sun_naut_twi_1[1], 0, 360, linestyles='dashed', colors='b')
-        plt.vlines(sun_astr_twi_1[0], 0, 360, linestyles='solid', colors='b')
-        plt.vlines(sun_astr_twi_1[1], 0, 360, linestyles='solid', colors='b')
+        plt.vlines(sun_set, 0, 360, linestyles='dotted', colors='b', linewidth=1, label='Sun set/rise')
+        plt.vlines(sun_rise, 0, 360, linestyles='dotted', colors='b', linewidth=1)
 
         ax2.legend(loc='best')
 
@@ -115,11 +111,12 @@ def plot_altaz_onday(targets, location, obstimes):
 
 
 if __name__ == "__main__":
-    location = Location(locstring='43.561667 10.589164')
+    location = Location(locstring='43.721045 10.407737')
 
-    targets = {'iUMa': SkyLocation(locstring="8h59m11.89s 48d2m27.6s", name='$\iota$UMa'),
-               'aLyr': SkyLocation(locstring="18h36m56.51s 38d47m8.5s", name='Vega'),
-               'aCar': SkyLocation(locstring="6h23m57.16s -52d51m43.8s", name="Canopo")}
+    targets = {'iUMa': SkyLocation(locstring="8h59m12.45362s 48d2m30.5741s", name='$\iota$UMa'),
+               'aLyr': SkyLocation(locstring="18h36m56.33635s 38d47m1.2802s", name='Vega'),
+               'aOri': SkyLocation(locstring='5h55m10.30536s 7d24m25.4304s', name='Betelgeuse'),
+               'aCar': SkyLocation(locstring="6h23m57.10988s -52d41m44.3810s", name="Canopus")}
 
     obstimes = init_times()
 
