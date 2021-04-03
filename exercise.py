@@ -16,6 +16,7 @@ from astropy.visualization import quantity_support
 time_support(scale='utc', format='iso', simplify=True)
 quantity_support()
 
+
 # Funzione per inizializzare gli array temporali
 def init_times(time=None):
     # Se non viene fornito nessun tempo, utilizza una data di default, altrimenti genera 14 ore con a metà la data
@@ -32,6 +33,7 @@ def init_times(time=None):
         obstimes[_] = obstime_base + hour_steps[_]
 
     return obstimes
+
 
 # Funzione che genera i plot
 def plot_altaz_onday(targets, location, obstimes):
