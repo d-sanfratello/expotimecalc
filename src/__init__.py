@@ -1,3 +1,6 @@
+__version__ = "1.0.0"
+__author__ = "Daniele Sanfratello"
+
 import numpy as np
 
 from astropy import units as u
@@ -15,7 +18,7 @@ import src.warnmsg as warnmsg
 import src.errmsg as errmsg
 
 
-Tsidday = (23.93447192 * u.hour).to(u.day) # Expl. Suppl. p698 (Sidereal year in 1990)
+Tsidday = (23.93447192 * u.hour).to(u.day)  # Expl. Suppl. p698 (Sidereal year in 1990)
 Tsidyear = 365.256363004 * u.day  # https://hpiers.obspm.fr/eop-pc/models/constants.html
 Jyear = 365.25 * u.day
 
