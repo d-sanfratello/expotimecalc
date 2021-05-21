@@ -278,3 +278,4 @@ class SkyLocation(Location):
 
 from . import sun
 from . import moon
+from . import planets
