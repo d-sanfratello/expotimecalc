@@ -1,17 +1,15 @@
 import numpy as np
 
 from astropy import units as u
+from astropy.constants import au
 
 from ..time import Time
 from ..skylocation import SkyLocation
-from ..skylocation.sun import Sun
 
-from .. import Tsidyear
 from .. import Omegasidmoon
 from .. import Equinox2000
 
 from .. import errmsg
-from .. import warnmsg
 
 
 class Moon(SkyLocation):
@@ -36,9 +34,11 @@ class Moon(SkyLocation):
         # Display/Output [change] : 	default (formatted HTML)
         #
         # Selected RA-DEC for the time corresponding to `Equinox2000.time`.
+        #
+        # Distance obtained from https://nssdc.gsfc.nasa.gov/planetary/factsheet/moonfact.html
         super(Moon, self).__init__(locstring=None,
-                                   ra='12h10m9.25s', dec='2d39m54.9s', obstime=obstime,
-                                   ra_unit='hms', dec_unit='dms', epoch='J2000', name='Moon')
+                                   ra='12h10m9.25s', dec='2d39m54.9s', distance=378e6 * u.m,
+                                   obstime=obstime, ra_unit='hms', dec_unit='dms', epoch='J2000', name='Moon')
 
         self.at_date(obstime)
 

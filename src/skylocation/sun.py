@@ -1,6 +1,7 @@
 import numpy as np
 
 from astropy import units as u
+from astropy.constants import au
 
 from ..time import Time
 from ..skylocation import SkyLocation
@@ -9,7 +10,6 @@ from .. import Tsidyear
 from .. import Equinox2000
 
 from .. import errmsg
-from .. import warnmsg
 
 
 class Sun(SkyLocation):
@@ -23,8 +23,8 @@ class Sun(SkyLocation):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
 
         # Viene inizializzato alla posizione (0,0), che è quella del Sole alla data dell'equinozio di riferimento.
-        super(Sun, self).__init__(locstring=None, ra=0*u.deg, dec=0*u.deg, obstime=obstime,
-                                  ra_unit='deg', dec_unit='deg', epoch='J2000', name='Sun')
+        super(Sun, self).__init__(locstring=None, ra=0*u.deg, dec=0*u.deg, distance=1 * au,
+                                  obstime=obstime, ra_unit='deg', dec_unit='deg', epoch='J2000', name='Sun')
 
         self.at_date(obstime)
 

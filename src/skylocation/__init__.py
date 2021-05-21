@@ -17,7 +17,6 @@ from .. import Equinox2000
 from .. import tJ2000
 
 from .. import errmsg
-from .. import warnmsg
 
 
 class SkyLocation(Location):
@@ -26,8 +25,8 @@ class SkyLocation(Location):
     equinoxes = {'equinoxJ2000': Equinox2000}
     epoch_rel_eq = {'J2000': 'equinoxJ2000'}
 
-    def __init__(self, locstring=None, ra=None, dec=None, obstime=None, ra_unit='hour', dec_unit='deg', epoch='J2000',
-                 name=None):
+    def __init__(self, locstring=None, ra=None, dec=None, distance=1, obstime=None, ra_unit='hour', dec_unit='deg',
+                 epoch='J2000', name=None):
         """
         Classe che definisce un oggetto celeste e permette di calcolarne la posizione ad una data scelta dall'utente.
         Accetta le coordinate equatoriali in una stringa, oppure di averle espresse esplicitamente in `ra` e `dec`.
@@ -89,8 +88,10 @@ class SkyLocation(Location):
         self.epoch = Time(epoch)
         self.epoch_eq = self.equinoxes[self.epoch_rel_eq[epoch]]
 
-        # Inizializzo il versore delle coordinate con le coordinate all'epoca indicata.
-        self.vector_epoch = Versor(self.ra_epoch, self.dec_epoch)
+        # Inizializzo il versore delle coordinate con le coordinate all'epoca indicata. Viene anche salvata la norma
+        # del vettore.
+        self.distance = distance
+        self.vector_epoch = Versor(self.ra_epoch, self.dec_epoch, radius=self.distance)
         self.vector_obstime = None
 
         # Se è fornita una data, inizializzo le coordinate a quella data.
