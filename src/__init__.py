@@ -12,10 +12,13 @@ from astropy.coordinates.angles import Longitude
 from skyfield import api
 from skyfield import almanac
 
-from src.time import Time
+from .time import Time
 
-import src.warnmsg as warnmsg
-import src.errmsg as errmsg
+from . import warnmsg
+from . import errmsg
+
+# import .warnmsg as warnmsg
+# import .errmsg as errmsg
 
 
 Tsidday = (23.93447192 * u.hour).to(u.day)  # Expl. Suppl. p698 (Sidereal year in 1990)
@@ -284,11 +287,11 @@ class RotationMatrix:
             raise ValueError(errmsg.invalidAxisError)
 
 
-import src.location
-import src.observation
-import src.time
-import src.skylocation
-import src.skylocation.sun
-import src.skylocation.moon
-import src.errmsg
-import src.warnmsg
+from . import location
+from . import observation
+from . import time
+from . import skylocation
+# from . import skylocation.sun
+# from . import skylocation.moon
+from . import errmsg
+from . import warnmsg

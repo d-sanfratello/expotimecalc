@@ -4,15 +4,15 @@ from astropy.coordinates.angles import Longitude
 from astropy.units.quantity import Quantity
 import numpy as np
 
-from src.time import Time
-from src import Versor
+from ..time import Time
+from .. import Versor
 
-from src import dms2deg
-from src import Equinox2000
-from src import Tsidday
+from .. import dms2deg
+from .. import Equinox2000
+from .. import Tsidday
 
-from src import errmsg
-from src import warnmsg
+from .. import errmsg
+from .. import warnmsg
 
 
 class Location:

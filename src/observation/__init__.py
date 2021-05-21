@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import warnings
 
 from astropy import units as u
 from astropy.coordinates import Angle
@@ -7,22 +8,20 @@ from astropy.units.quantity import Quantity
 from astropy.visualization import time_support
 from astropy.visualization import quantity_support
 
-from src.location import Location
-from src.skylocation import SkyLocation
-from src.skylocation.sun import Sun
-from src.skylocation.moon import Moon
-from src.time import Time
+from ..location import Location
+from ..skylocation import SkyLocation
+from ..skylocation.sun import Sun
+from ..skylocation.moon import Moon
+from ..time import Time
 
-from src import Tsidday
-from src import Tsidyear
-from src import Jyear
-from src import Tprec
-from src import Equinox2000
+from .. import Tsidday
+from .. import Tsidyear
+from .. import Jyear
+from .. import Tprec
+from .. import Equinox2000
 
-from src import errmsg
-from src import warnmsg
-
-import warnings
+from .. import errmsg
+from .. import warnmsg
 
 
 time_support(scale='utc', format='iso', simplify=True)

@@ -5,19 +5,19 @@ from astropy.coordinates.angles import Latitude
 from astropy.coordinates.angles import Longitude
 from astropy.units.quantity import Quantity
 
-from src.time import Time
-from src.location import Location
-from src import Versor
+from ..time import Time
+from ..location import Location
+from .. import Versor
 
-from src import hms2deg
-from src import dms2deg
+from .. import hms2deg
+from .. import dms2deg
 
-from src import Tprec
-from src import Equinox2000
-from src import tJ2000
+from .. import Tprec
+from .. import Equinox2000
+from .. import tJ2000
 
-from src import errmsg
-from src import warnmsg
+from .. import errmsg
+from .. import warnmsg
 
 
 class SkyLocation(Location):
@@ -275,5 +275,5 @@ class SkyLocation(Location):
         return 23.43929111 * u.deg
 
 
-import src.skylocation.sun
-import src.skylocation.moon
+from . import sun
+from . import moon

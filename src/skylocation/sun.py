@@ -2,14 +2,14 @@ import numpy as np
 
 from astropy import units as u
 
-from src.time import Time
-from src.skylocation import SkyLocation
+from ..time import Time
+from ..skylocation import SkyLocation
 
-from src import Tsidyear
-from src import Equinox2000
+from .. import Tsidyear
+from .. import Equinox2000
 
-from src import errmsg
-from src import warnmsg
+from .. import errmsg
+from .. import warnmsg
 
 
 class Sun(SkyLocation):
