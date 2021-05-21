@@ -1,4 +1,4 @@
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 __author__ = "Daniele Sanfratello"
 
 import numpy as np
@@ -16,9 +16,6 @@ from .time import Time
 
 from . import warnmsg
 from . import errmsg
-
-# import .warnmsg as warnmsg
-# import .errmsg as errmsg
 
 
 Tsidday = (23.93447192 * u.hour).to(u.day)  # Expl. Suppl. p698 (Sidereal year in 1990)
@@ -146,7 +143,7 @@ class Eclipse1999:
 
 
 class Versor:
-    def __init__(self, ra=None, dec=None, vector=None, unit=None):
+    def __init__(self, ra=None, dec=None, radius=None, vector=None, unit=None):
         """
         Classe che accetta delle coordinate equatoriali o un vettore in coordinate cartesiane e genera il versore che
         punta quelle coordinate.
@@ -187,14 +184,21 @@ class Versor:
             ra = self.ra.rad
             dec = self.dec.rad
 
-            # Date le coordinate equatoriali, viene generato il versore che punti quelle coordinate. L'asse x è il punto
+            # Se non viene fornito una dimensione radiale, si considera il versore come unitario.
+            if radius is None:
+                self.radius = 1
+            else:
+                self.radius = radius
+
+            # Date le coordinate equatoriali, viene generato il vettore che punti quelle coordinate. L'asse x è il punto
             # vernale, l'asse z indica il Polo Nord Celeste e l'asse y è definito per completare la terna ortogonale.
-            self.vsr = np.array([np.cos(dec)*np.cos(ra),
-                                 np.cos(dec)*np.sin(ra),
+            self.vsr = np.array([np.cos(dec) * np.cos(ra),
+                                 np.cos(dec) * np.sin(ra),
                                  np.sin(dec)], dtype=np.float64)
         else:
-            # Se viene fornito il vettore, questo viene intanto normalizzato.
-            self.vsr = np.copy(vector)/np.sqrt((vector**2).sum())
+            # Se viene fornito il vettore, questo viene intanto normalizzato, salvando la norma dello stesso.
+            self.radius = np.sqrt((vector**2).sum())
+            self.vsr = np.copy(vector) / self.radius
 
             # Dalle coordinate si ricavano RA e DEC e si convertono in oggetti `Longitude` e `Latitude`,
             # rispettivamente.
@@ -216,7 +220,7 @@ class Versor:
         vsr /= np.sqrt((vsr**2).sum())
 
         if copy:
-            return Versor(vector=vsr)
+            return Versor(vector=vsr * self.radius)
         else:
             self.vsr = vsr
 
@@ -232,7 +236,7 @@ class Versor:
         vsr /= np.sqrt((vsr**2).sum())
 
         if copy:
-            return Versor(vector=vsr)
+            return Versor(vector=vsr * self.radius)
         else:
             self.vsr = vsr
 
@@ -291,7 +295,5 @@ from . import location
 from . import observation
 from . import time
 from . import skylocation
-# from . import skylocation.sun
-# from . import skylocation.moon
 from . import errmsg
 from . import warnmsg
