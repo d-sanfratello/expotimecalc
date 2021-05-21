@@ -12,7 +12,6 @@ from .. import Equinox2000
 from .. import Tsidday
 
 from .. import errmsg
-from .. import warnmsg
 
 
 class Location:
