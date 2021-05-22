@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import matplotlib.ticker as mticker
 import numpy as np
 import warnings
 
@@ -603,66 +604,124 @@ class Observation:
 
             return cls.calculate_culmination(target, location, obstime + delta_time + delta_time_1)
 
-    def plot_altaz_onday(self, obstime, interval=15*u.min):
+    def plot_altaz(self, target, location, obstime, sun, moon, interval=15*u.min):
         step_mjd = interval / (1 * u.d).to(interval.unit)
 
-        twilights = self.calculate_twilight(self.sun, self.location, obstime, twilight='nautical')
-        step_times = np.arange(twilights[1].mjd, twilights[2].mjd, step_mjd)
+        sunset = self.calculate_set_time(sun, location, obstime - 6 * u.hour)
+        sunrise = self.calculate_rise_time(sun, location, obstime + 1 * u.day)
+        step_times = np.arange(sunset.mjd - step_mjd, sunrise.mjd + step_mjd, step_mjd)
 
-        if step_times[-1] < twilights[2].mjd:
-            step_times = np.arange(twilights[1].mjd, twilights[2].mjd + step_mjd, step_mjd)
+        times = Time(step_times, format='mjd')
 
-        # check for exercise.py to determine continuation of plot function. Maybe convert to be alike the other class
-        # functions? Check Email for further corrections.
+        alt = [self.calculate_alt(target, location, t) for t in times] * u.deg
+        az = [self.calculate_az(target, location, t) for t in times] * u.deg
 
-        interval = interval.to(u.hour)
-        numpoints = int(24*u.hour/interval)
+        alt_moon = [self.calculate_alt(moon, location, t) for t in times] * u.deg
+        az_moon = [self.calculate_az(moon, location, t) for t in times] * u.deg
 
-        s_time = Time(int(self.obstime.mjd), format='mjd')
-        dt = 15*u.min * np.linspace(0, numpoints, num=numpoints + 1)
-        times = np.array([s_time + delta for delta in dt])
+        sun_naut_twilights_0 = self.calculate_twilight(sun, location, obstime, twilight='nautical')[1:]
+        sun_astr_twilights_0 = self.calculate_twilight(sun, location, obstime, twilight='astronomical')[1:]
 
-        alt = np.empty(numpoints + 1, dtype=u.quantity.Quantity)
-        az = np.empty(numpoints + 1, dtype=u.quantity.Quantity)
-        index = 0
+        fig = plt.figure(figsize=(8, 8))
+        fig.suptitle(target.name + " between {} and {}".format(obstime.iso[:-13], times[-1].iso[:-13]))
 
-        for t in times:
-            alt[index] = self.calculate_alt(self.target, self.location, t)
-            az[index] = self.calculate_az(self.target, self.location, t)
-
-            index += 1
-
-        times = Time([t for t in times], scale='utc')
-        times = times.to_value('iso', subfmt='date_hm')
-        alt = u.quantity.Quantity([at for at in alt])
-        az = u.quantity.Quantity([z for z in az])
-
-        plt.close(1)
-        fig = plt.figure(1)
-
-        fig.suptitle(self.target.name)
-
-        ax1 = plt.subplot2grid((2, 1), (0, 0))
+        ## subplot1
+        # plot dell'altezza sull'orizzonte
+        ax1 = plt.subplot2grid((3, 1), (0, 0))
         ax1.grid()
-        ax1.plot(times, alt, 'k-')
-        ax1.set_ylim(-90, 90)
-        ax1.yaxis.set_ticks(np.linspace(-90, 90, 7))
-        ax1.xaxis.set_major_locator(plt.MaxNLocator(25))
+        ax1.plot(step_times, alt, 'k-')
+        ax1.plot(step_times, alt_moon, 'k-.')
+
+        # linee dei crepuscoli. I label sono definiti dopo.
+        ax1.vlines(sun_naut_twilights_0[0], -90, 90, linestyles='dashed', colors='b')
+        ax1.vlines(sun_naut_twilights_0[1], -90, 90, linestyles='dashed', colors='b')
+        ax1.vlines(sun_astr_twilights_0[0], -90, 90, linestyles='solid', colors='b')
+        ax1.vlines(sun_astr_twilights_0[1], -90, 90, linestyles='solid', colors='b')
+
+        # plot dell'alba e del tramonto del Sole
+        ax1.vlines(sunset, -90, 90, linestyles='dotted', colors='b', linewidth=1)
+        ax1.vlines(sunrise, -90, 90, linestyles='dotted', colors='b', linewidth=1)
+
+        # definiti i limiti come tra il crepuscolo astronomico e lo zenit.
+        ax1.set_ylim(-18, 90)
+
+        # gestione dei tick delle altezze sull'orizzonte.
+        ax1.yaxis.set_ticks(np.array([-18, 0, 30, 60, 90]))
+        ax1.hlines(-12, min(step_times), max(step_times), linestyles='dashed', colors='b', linewidth=1)
+        ax1.hlines(0, min(step_times), max(step_times), linestyles='dotted', colors='b', linewidth=1)
+
+        ax1.xaxis.set_major_locator(plt.MaxNLocator(len(times) - 1))
+        ax1.xaxis.set_ticks(times[0::5])
         ax1.set_xticklabels([])
         ax1.set_xlabel('')
         ax1.set_ylabel('Alt [deg]')
 
-        ax2 = plt.subplot2grid((2, 1), (1, 0))
+        # aggiunta dei tick per le airmass
+        ax1_ = ax1.twinx()
+        ax1_.set_ylim(ax1.get_ylim())
+        airmasses = np.concatenate((np.arange(1., 1.1, 0.05),
+                                    np.arange(1.1, 1.3, 0.1),
+                                    np.arange(1.3, 1.6, 0.2),
+                                    np.arange(2, 3, 1)))
+        airmasses_ticks = ['{:1.2f}'.format(tick) for tick in airmasses]
+        alt_ticks = 90 - np.rad2deg(np.arccos(1 / airmasses))
+        ax1_.yaxis.set_major_locator(mticker.FixedLocator(alt_ticks * u.deg))
+        ax1_.set_yticks(alt_ticks)
+        ax1_.set_yticklabels(airmasses_ticks)
+
+        ax1_.set_ylabel('Airmass')
+
+        ## subplot2
+        # plot dell'azimut
+        ax2 = plt.subplot2grid((3, 1), (1, 0), rowspan=2)
         ax2.grid()
-        ax2.plot(times, az, 'k-')
+        ax2.plot(step_times, az, 'k-')
+        ax2.plot(step_times, az_moon, 'k-.',
+                 label='Moon phase = {:.2}$\\rightarrow${:.2}'.format(moon.calculate_moon_phase(sun, times[0]),
+                                                                      moon.calculate_moon_phase(sun, times[-1])))
+
+        # linee dei crepuscoli. I label sono definiti dopo.
+        ax2.vlines(sun_naut_twilights_0[0], 0, 360, linestyles='dashed', colors='b', label='Naut. twilight')
+        ax2.vlines(sun_naut_twilights_0[1], 0, 360, linestyles='dashed', colors='b')
+        ax2.vlines(sun_astr_twilights_0[0], 0, 360, linestyles='solid', colors='b', label='Astr. twilight')
+        ax2.vlines(sun_astr_twilights_0[1], 0, 360, linestyles='solid', colors='b')
+
+        # plot dell'alba e del tramonto del Sole
+        ax2.vlines(sunset, 0, 360, linestyles='dotted', colors='b', linewidth=1, label='Sun set/rise')
+        ax2.vlines(sunrise, 0, 360, linestyles='dotted', colors='b', linewidth=1)
+
+        ax2.legend(loc='best')
+
+        # gestione dei tick degli azimut.
         ax2.set_ylim(0, 360)
         ax2.yaxis.set_ticks(np.linspace(0, 360, 13))
-        ax2.xaxis.set_major_locator(plt.MaxNLocator(25))
+        ax2.xaxis.set_major_locator(plt.MaxNLocator(len(step_times) - 1))
+        ax2.xaxis.set_ticks(step_times[0::5])
+        times_labs = times[0::5]
+        labels = [l.iso[11:16] for l in times_labs]
+        ax2.set_xticklabels(labels)
         ax2.xaxis.set_tick_params(rotation=80)
         ax2.set_ylabel('Az [deg]')
 
-        ax1.set_xlim(min(times), max(times))
-        ax2.set_xlim(min(times), max(times))
+        # aggiunta dei tick per i punti cardinali.
+        ax2_ = ax2.twinx()
+        ax2_.set_ylim(ax2.get_ylim())
+        ticks_loc = ax2.get_yticks().tolist()
+        ax2_.yaxis.set_major_locator(mticker.FixedLocator([0, 90, 180, 270, 360]))
+        ax2_ticks = []
+        for tick in ticks_loc:
+            if tick == 0 or tick == 360:
+                ax2_ticks.append('N')
+            elif tick == 90:
+                ax2_ticks.append('E')
+            elif tick == 180:
+                ax2_ticks.append('S')
+            elif tick == 270:
+                ax2_ticks.append('W')
+        ax2_.set_yticklabels(ax2_ticks)
+
+        ax1.set_xlim(min(step_times), max(step_times))
+        ax2.set_xlim(min(step_times), max(step_times))
 
         fig.tight_layout()
         fig.show()

@@ -31,7 +31,6 @@ def init_times(time=None):
 
 # Funzione che genera i plot
 def plot_altaz_onday(targets, location, obstimes):
-    # times = Time([t.mjd for t in obstimes], format='mjd')
     times = [t.mjd for t in obstimes]
 
     # esegue in ciclo dentro un dizionario di target passato come argomento.
