@@ -603,7 +603,18 @@ class Observation:
 
             return cls.calculate_culmination(target, location, obstime + delta_time + delta_time_1)
 
-    def plot_altaz_onday(self, interval=15*u.min):
+    def plot_altaz_onday(self, obstime, interval=15*u.min):
+        step_mjd = interval / (1 * u.d).to(interval.unit)
+
+        twilights = self.calculate_twilight(self.sun, self.location, obstime, twilight='nautical')
+        step_times = np.arange(twilights[1].mjd, twilights[2].mjd, step_mjd)
+
+        if step_times[-1] < twilights[2].mjd:
+            step_times = np.arange(twilights[1].mjd, twilights[2].mjd + step_mjd, step_mjd)
+
+        # check for exercise.py to determine continuation of plot function. Maybe convert to be alike the other class
+        # functions? Check Email for further corrections.
+
         interval = interval.to(u.hour)
         numpoints = int(24*u.hour/interval)
 

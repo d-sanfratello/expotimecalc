@@ -7,14 +7,10 @@ from src.skylocation.sun import Sun
 from src.skylocation.moon import Moon
 
 import numpy as np
+
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
 from astropy import units as u
-
-from astropy.visualization import time_support
-from astropy.visualization import quantity_support
-time_support(scale='utc', format='iso', simplify=True)
-quantity_support()
 
 
 # Funzione per inizializzare gli array temporali
@@ -22,22 +18,21 @@ def init_times(time=None):
     # Se non viene fornito nessun tempo, utilizza una data di default, altrimenti genera 14 ore con a metà la data
     # indicata.
     if time is None:
-        obstime_base = Time('2021-04-02 17:00:00')
+        obstime_base = Time('2021-04-02 17:00:00', scale='utc')
         hour_steps = np.arange(0, 14, step=0.25) * u.hour
     else:
         obstime_base = time
         hour_steps = np.arange(-7, 7, step=0.25) * u.hour
 
-    obstimes = np.empty(len(hour_steps), dtype=Time)
-    for _ in range(len(hour_steps)):
-        obstimes[_] = obstime_base + hour_steps[_]
+    obstimes = Time([obstime_base + hs for hs in hour_steps], scale='utc')
 
     return obstimes
 
 
 # Funzione che genera i plot
 def plot_altaz_onday(targets, location, obstimes):
-    times = Time([t.mjd for t in obstimes], format='mjd')
+    # times = Time([t.mjd for t in obstimes], format='mjd')
+    times = [t.mjd for t in obstimes]
 
     # esegue in ciclo dentro un dizionario di target passato come argomento.
     for key in targets.keys():
@@ -116,8 +111,8 @@ def plot_altaz_onday(targets, location, obstimes):
         ax2.grid()
         ax2.plot(times, az, 'k-')
         ax2.plot(times, az_moon, 'k-.',
-                 label='Moon - phase = {:.2}$\\rightarrow${:.2}'.format(moon.calculate_moon_phase(sun, times[0]),
-                                                                        moon.calculate_moon_phase(sun, times[-1])))
+                 label='Moon phase = {:.2}$\\rightarrow${:.2}'.format(moon.calculate_moon_phase(sun, obstimes[0]),
+                                                                      moon.calculate_moon_phase(sun, obstimes[-1])))
 
         # linee dei crepuscoli. I label sono definiti dopo.
         plt.vlines(sun_naut_twi_0[0], 0, 360, linestyles='dashed', colors='b', label='Naut. twilight')
@@ -136,7 +131,11 @@ def plot_altaz_onday(targets, location, obstimes):
         ax2.yaxis.set_ticks(np.linspace(0, 360, 13))
         ax2.xaxis.set_major_locator(plt.MaxNLocator(len(times) - 1))
         ax2.xaxis.set_ticks(times[0::5])
+        times_labs = obstimes[0::5]
+        labels = [l.iso[11:16] for l in times_labs]
+        ax2.set_xticklabels(labels)
         ax2.xaxis.set_tick_params(rotation=80)
+
         ax2.set_ylabel('Az [deg]')
 
         # aggiunta dei tick per i punti cardinali.
