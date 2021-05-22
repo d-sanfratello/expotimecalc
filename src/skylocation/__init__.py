@@ -296,7 +296,7 @@ class SkyLocation(Location):
     # noinspection PyPep8Naming
     @property
     def heliocentric_earth_J2000(self):
-        return Versor(vector=np.array([1, 0, 0]) * cts.ua)
+        return Versor(vector=np.array([1, 0, 0]) * cts.au)
 
 
 from . import sun

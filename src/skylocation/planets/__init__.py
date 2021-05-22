@@ -24,8 +24,8 @@ class Planet(SkyLocation):
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
         if not isinstance(longitude_an, (Angle, Longitude)):
-            raise TypeError(errmsg.notTwoTypesError('longitude_an', 'astropy.coordinates.Angle',
-                                                    'astropy.coordinates.angles.Longitude'))
+            raise TypeError(errmsg.notTwoTypesError.format('longitude_an', 'astropy.coordinates.Angle',
+                                                           'astropy.coordinates.angles.Longitude'))
         if not isinstance(orbit_inclination, Angle):
             raise TypeError(errmsg.notTypeError('orbit_inclination', 'astropy.coordinates.Angle'))
         if not isinstance(revolution_period, u.Quantity):
@@ -87,7 +87,7 @@ class Planet(SkyLocation):
     # noinspection PyPep8Naming
     @property
     def heliocentric_planet_J2000(self):
-        helioc_planet = self.vector_epoch.rotate_inv('z', angle=self.axial_tilt(Equinox2000), copy=True)\
+        helioc_planet = self.vector_epoch.rotate_inv('z', angle=self.axial_tilt(Equinox2000.time), copy=True)\
                         + self.heliocentric_earth_J2000
 
         return helioc_planet
