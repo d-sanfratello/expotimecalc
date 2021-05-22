@@ -205,8 +205,16 @@ class Versor:
             self.ra = np.arctan2(self.vsr[1], self.vsr[0])
             self.dec = np.arctan2(self.vsr[2], np.sqrt(self.vsr[0]**2 + self.vsr[1]**2))
 
-            self.ra = Longitude(np.rad2deg(self.ra) * u.deg)
-            self.dec = Latitude(np.rad2deg(self.dec) * u.deg)
+            if isinstance(self.ra, u.Quantity):
+                self.ra = self.ra.to(u.deg)
+                self.ra = Longitude(self.ra)
+            else:
+                self.ra = Longitude(np.rad2deg(self.ra) * u.deg)
+            if isinstance(self.dec, u.Quantity):
+                self.dec = self.dec.to(u.deg)
+                self.dec = Latitude(self.dec)
+            else:
+                self.dec = Latitude(np.rad2deg(self.dec) * u.deg)
 
     def rotate(self, axis, angle, unit='rad', copy=False):
         """
