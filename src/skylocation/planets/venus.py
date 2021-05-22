@@ -30,6 +30,7 @@ class Venus(Planet):
         venus = planets['venus']
         astrometric = earth.at(time).observe(venus)
         ra, dec, dist = astrometric.radec()
+        planets.close()
 
         super(Venus, self).__init__(ra.to(u.deg), dec.to(u.deg), __distance, obstime,
                                     __longitude_an, __orbit_inclination, __revolution_period,

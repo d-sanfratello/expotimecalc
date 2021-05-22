@@ -121,6 +121,7 @@ class Equinox2000:
     t0 = ts.utc(2000, 3, 20)
     t1 = ts.utc(2000, 3, 21)
     t = almanac.find_discrete(t0, t1, almanac.seasons(eph))[0]
+    eph.close()
 
     time = Time(t.utc_iso()[0][:-1], scale='utc')
 
@@ -138,6 +139,7 @@ class Eclipse1999:
     t0 = ts.utc(1999, 8, 1)
     t1 = ts.utc(1999, 8, 15)
     t = almanac.find_discrete(t0, t1, almanac.moon_nodes(eph))[0]
+    eph.close()
 
     time = Time(t.utc_iso()[0][:-1], scale='utc')
 
