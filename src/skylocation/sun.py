@@ -1,7 +1,7 @@
 import numpy as np
 
 from astropy import units as u
-from astropy.constants import au
+from astropy import constants as cts
 
 from ..time import Time
 from ..skylocation import SkyLocation
@@ -23,7 +23,7 @@ class Sun(SkyLocation):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
 
         # Viene inizializzato alla posizione (0,0), che è quella del Sole alla data dell'equinozio di riferimento.
-        super(Sun, self).__init__(locstring=None, ra=0*u.deg, dec=0*u.deg, distance=1 * au,
+        super(Sun, self).__init__(locstring=None, ra=0*u.deg, dec=0*u.deg, distance=1 * cts.au,
                                   obstime=obstime, ra_unit='deg', dec_unit='deg', epoch='J2000', name='Sun')
 
         self.at_date(obstime)

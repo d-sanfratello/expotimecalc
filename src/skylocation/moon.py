@@ -1,7 +1,6 @@
 import numpy as np
 
 from astropy import units as u
-from astropy.constants import au
 
 from ..time import Time
 from ..skylocation import SkyLocation
