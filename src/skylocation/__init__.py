@@ -1,5 +1,6 @@
 import numpy as np
 
+from astropy import constants as cts
 from astropy import units as u
 from astropy.coordinates.angles import Latitude
 from astropy.coordinates.angles import Longitude
@@ -13,6 +14,7 @@ from .. import hms2deg
 from .. import dms2deg
 
 from .. import Tprec
+from .. import Tsidyear
 from .. import Equinox2000
 from .. import tJ2000
 
@@ -252,6 +254,22 @@ class SkyLocation(Location):
         # Restituisce la fase accumulata, in radianti, in rapporto al tempo di precessione.
         return ((2*np.pi/Tprec.value) * (obstime - reference.time).jd) % (2*np.pi) * u.rad
 
+    @classmethod
+    def year_revolution(cls, obstime, epoch_eq='equinoxJ2000'):
+        """
+        Metodo di classe che calcola l'effetto della rivoluzione della Terra intorno al Sole dall'equinozio di
+        riferimento alla data indicata. Al momento è disponibile solo l'equinozio vernale del 2000.
+        """
+        if not isinstance(obstime, Time):
+            raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
+        if epoch_eq != 'equinoxJ2000':
+            raise NotImplementedError(errmsg.epochNotImplemented)
+
+        reference = cls.equinoxes[epoch_eq]
+
+        # Restituisce la fase accumulata, in radianti, in rapporto all'anno siderale.
+        return ((2*np.pi/Tsidyear.value) * (obstime - reference.time).jd) % (2*np.pi) * u.rad
+
     @staticmethod
     def axial_tilt(obstime):
         """
@@ -274,6 +292,11 @@ class SkyLocation(Location):
         # check for Earth Fact Sheet at https://nssdc.gsfc.nasa.gov/planetary/factsheet/earthfact.html [23.44]
         # check for Kenneth Seidelmann, "Explanatory Supplement to the astronomical almanac" p. 315.
         return 23.43929111 * u.deg
+
+    # noinspection PyPep8Naming
+    @property
+    def heliocentric_earth_J2000(self):
+        return Versor(vector=np.array([1, 0, 0]) * cts.ua)
 
 
 from . import sun

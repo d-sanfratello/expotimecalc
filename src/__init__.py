@@ -1,4 +1,4 @@
-__version__ = "1.1.0"
+__version__ = "1.1.1"
 __author__ = "Daniele Sanfratello"
 
 import numpy as np
@@ -92,24 +92,24 @@ def open_loc_file(obs_path, tgt_path):
 
 
 class GMSTeq2000:
-    def __init__(self, time):
+    def __init__(self, obstime):
         """
         Classe che identifica il Greenwich Mean Sidereal Time all'equinozio vernale del 2000.
         """
-        if not isinstance(time, Time):
+        if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
 
-        self.hms = self.__set_time(time)
+        self.hms = self.__set_time(obstime)
         self.deg = self.hms.to(u.deg)
         self.rad = self.hms.to(u.rad)
 
     @staticmethod
-    def __set_time(time):
-        if not isinstance(time, Time):
+    def __set_time(obstime):
+        if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
 
-        time.location = EarthLocation.of_site('greenwich')
-        return time.sidereal_time('mean')
+        obstime.location = EarthLocation.of_site('greenwich')
+        return obstime.sidereal_time('mean')
 
 
 class Equinox2000:
@@ -239,6 +239,18 @@ class Versor:
             return Versor(vector=vsr * self.radius)
         else:
             self.vsr = vsr
+
+    def __add__(self, add_vcr):
+        if not isinstance(add_vcr, Versor):
+            raise TypeError(errmsg.notTypeError.format('add_vcr', 'Versor'))
+
+        return Versor(vector=self.vsr * self.radius + add_vcr.vsr * add_vcr.radius)
+
+    def __sub__(self, sub_vcr):
+        if not isinstance(sub_vcr, Versor):
+            raise TypeError(errmsg.notTypeError.format('sub_vcr', 'Versor'))
+
+        return Versor(vector=self.vsr * self.radius - sub_vcr.vsr * sub_vcr.radius)
 
 
 class RotationMatrix:
