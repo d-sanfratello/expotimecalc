@@ -83,7 +83,7 @@ class Planet(SkyLocation):
             .rotate(axis='z', angle=self.longitude_an, copy=True)
 
         vector_obstime = (heliocentric - self.heliocentric_earth_J2000) \
-            .rotate_inv(axis='x', angle=self.axial_tilt(obstime), copy=True)  # check for rotate or rotate_inv
+            .rotate(axis='x', angle=self.axial_tilt(obstime), copy=True)  # check for rotate or rotate_inv
 
         return vector_obstime
 
@@ -122,7 +122,7 @@ class Planet(SkyLocation):
             .rotate(axis='z', angle=self.longitude_an, copy=True)
 
         self.vector_epoch = (self.helioc_eq2000 - self.heliocentric_earth_J2000) \
-            .rotate_inv(axis='x', angle=self.axial_tilt(Equinox2000.time), copy=True)  # check for rotate or rotate_inv
+            .rotate(axis='x', angle=self.axial_tilt(Equinox2000.time), copy=True)  # check for rotate or rotate_inv
 
     # # noinspection PyPep8Naming
     # @property
