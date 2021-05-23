@@ -1,37 +1,39 @@
-import numpy as np
+import pykep as pk
+# https://ui.adsabs.harvard.edu/abs/2015arXiv151100821I/abstract
 
 from astropy import units as u
 from astropy import constants as cts
 from astropy.coordinates import Angle
-
-from skyfield import api
+from astropy.coordinates import Longitude
 
 from ... import Equinox2000
+from ...time import Time
 from . import Planet
+
+from . import errmsg
 
 
 class Venus(Planet):
     def __init__(self, obstime):
+        if not isinstance(obstime, Time):
+            raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
 
-        # From: https://nssdc.gsfc.nasa.gov/planetary/factsheet/venusfact.html
-        __semimaj = 0.72333199 * cts.au
-        __ecc = 0.00677323
-        __semimin = __semimaj * np.sqrt(1 - __ecc ** 2)
-        __distance = 0.5 * (__semimin + __semimaj)
+        planet = pk.planet.jpl_lp('venus')
+        epoch = pk.epoch_from_string(Equinox2000.time.iso)
 
-        __longitude_an = Angle(76.68069 * u.deg)
-        __orbit_inclination = Angle(3.39471 * u.deg)
-        __revolution_period = 227.701 * u.d
+        __semimaj, __ecc, __inclination, __ra_an, __peri_arg, __mean_anomaly = planet.osculating_elements(epoch)
+        __semimaj *= u.m
+        __semimaj = __semimaj.to(cts.au)
 
-        ts = api.load.timescale()
-        time = ts.from_astropy(Equinox2000.time)
-        planets = api.load('de421.bsp')
-        earth = planets['earth']
-        venus = planets['venus']
-        astrometric = earth.at(time).observe(venus)
-        ra, dec, dist = astrometric.radec()
-        planets.close()
+        __inclination *= u.rad
+        __inclination = Angle(__inclination.to(u.deg))
 
-        super(Venus, self).__init__(ra.to(u.deg), dec.to(u.deg), __distance, obstime,
-                                    __longitude_an, __orbit_inclination, __revolution_period,
-                                    name='Venus', epoch='J2000')
+        __ra_an *= u.rad
+        __longitude_an = Longitude(__ra_an.to(u.deg))
+
+        __peri_arg *= u.rad
+        __peri_arg = Angle(__peri_arg.to(u.deg))
+
+        super(Venus, self).__init__(obstime, semimaj=__semimaj, eccentricity=__ecc, longitude_an=__longitude_an,
+                                    inclination=__inclination, argument_perihelion=__peri_arg,
+                                    mean_anomaly=__mean_anomaly, name='Venus', epoch='J2000')
