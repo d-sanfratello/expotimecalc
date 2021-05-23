@@ -677,8 +677,8 @@ class Observation:
         ax2.grid()
         ax2.plot(step_times, az, 'k-')
         ax2.plot(step_times, az_moon, 'k-.',
-                 label='Moon phase = {:.2}$\\rightarrow${:.2}'.format(moon.calculate_moon_phase(sun, times[0]),
-                                                                      moon.calculate_moon_phase(sun, times[-1])))
+                 label='Moon: phase = {:.2}$\\rightarrow${:.2}'.format(moon.calculate_moon_phase(sun, times[0]),
+                                                                       moon.calculate_moon_phase(sun, times[-1])))
 
         # linee dei crepuscoli. I label sono definiti dopo.
         ax2.vlines(sun_naut_twilights_0[0], 0, 360, linestyles='dashed', colors='b', label='Naut. twilight')
