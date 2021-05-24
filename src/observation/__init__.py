@@ -607,10 +607,12 @@ class Observation:
     def plot_altaz(self, target, location, obstime, sun, moon, interval=15*u.min):
         step_mjd = interval / (1 * u.d).to(interval.unit)
 
-        sunset = self.calculate_set_time(sun, location, obstime - 6 * u.hour)
-        sunrise = self.calculate_rise_time(sun, location, obstime + 1 * u.day)
-        step_times = np.arange(sunset.mjd - step_mjd, sunrise.mjd + step_mjd, step_mjd)
+        sunset = self.calculate_set_time(sun, location, obstime)
+        if int(sunset.mjd) > int(obstime.mjd):
+            sunset = self.calculate_set_time(sun, location, obstime - 1 * u.day)
+        sunrise = self.calculate_rise_time(sun, location, sunset)
 
+        step_times = np.arange(sunset.mjd - step_mjd, sunrise.mjd + step_mjd, step_mjd)
         times = Time(step_times, format='mjd')
 
         alt = [self.calculate_alt(target, location, t) for t in times] * u.deg
