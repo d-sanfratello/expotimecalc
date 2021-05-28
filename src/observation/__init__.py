@@ -8,6 +8,8 @@ from astropy.coordinates import Angle
 from astropy.units.quantity import Quantity
 from astropy.visualization import time_support
 from astropy.visualization import quantity_support
+from matplotlib.colors import Normalize
+from matplotlib.lines import Line2D
 
 from ..location import Location
 from ..skylocation import SkyLocation
@@ -72,7 +74,7 @@ class Observation:
         self.set_azimuth = None
         self.set_ha = None
 
-        self.make_observation(self.obstime)
+        # self.make_observation(self.obstime)
 
     def make_observation(self, obstime):
         """
@@ -605,6 +607,14 @@ class Observation:
             return cls.calculate_culmination(target, location, obstime + delta_time + delta_time_1)
 
     def plot_altaz(self, target, location, obstime, sun, moon, interval=15*u.min):
+        ### DEBUG #######
+        from astropy.coordinates import solar_system_ephemeris, EarthLocation
+        from astropy.coordinates import get_body
+        from astropy.coordinates import AltAz
+
+        loc = EarthLocation(lon=self.location.lon, lat=self.location.lat, height=0*u.m)
+        solar_system_ephemeris.set('builtin')
+        ### DEBUG #######
         step_mjd = interval / (1 * u.d).to(interval.unit)
 
         sunset = self.calculate_set_time(sun, location, obstime)
@@ -614,12 +624,21 @@ class Observation:
 
         step_times = np.arange(sunset.mjd - step_mjd, sunrise.mjd + step_mjd, step_mjd)
         times = Time(step_times, format='mjd')
+        ### DEBUG #######
+        aa_frames = AltAz(location=loc, obstime=times)
+        ven = get_body('venus', times, loc)
+        ven_altaz = ven.transform_to(aa_frames)
+
+        alt_ven = ven_altaz.alt
+        az_ven = ven_altaz.az
+        ### DEBUG #######
 
         alt = [self.calculate_alt(target, location, t) for t in times] * u.deg
         az = [self.calculate_az(target, location, t) for t in times] * u.deg
 
         alt_moon = [self.calculate_alt(moon, location, t) for t in times] * u.deg
         az_moon = [self.calculate_az(moon, location, t) for t in times] * u.deg
+        phase_moon = [moon.calculate_moon_phase(self.sun, t) for t in times]  #
 
         sun_naut_twilights_0 = self.calculate_twilight(sun, location, obstime, twilight='nautical')[1:]
         sun_astr_twilights_0 = self.calculate_twilight(sun, location, obstime, twilight='astronomical')[1:]
@@ -631,8 +650,12 @@ class Observation:
         # plot dell'altezza sull'orizzonte
         ax1 = plt.subplot2grid((3, 1), (0, 0))
         ax1.grid()
-        ax1.scatter(step_times, alt, marker='.', s=10, color='black')
-        ax1.plot(step_times, alt_moon, linestyle='dashdot', color='black', linewidth=1)
+        ax1.scatter(step_times, alt_moon, c=phase_moon, norm=Normalize(-1, 1), cmap='gray',
+                    marker='o', s=40, edgecolors='black', linewidths=.8)
+        ax1.scatter(step_times, alt, marker='*', s=10, color='black')
+        ### DEBUG #######
+        ax1.scatter(step_times, alt_ven, marker='s', s=10, color='red')
+        ### DEBUG #######
 
         # linee dei crepuscoli. I label sono definiti dopo.
         ax1.vlines(sun_naut_twilights_0[0], -90, 90, linestyles='dashed', colors='b')
@@ -677,22 +700,30 @@ class Observation:
         # plot dell'azimut
         ax2 = plt.subplot2grid((3, 1), (1, 0), rowspan=2)
         ax2.grid()
-        ax2.scatter(step_times, az, marker='.', s=10, color='black', label='{}'.format(self.target.name))
-        ax2.plot(step_times, az_moon, linestyle='dashdot', color='black', linewidth=1,
-                 label='Moon: phase = {:.2}$\\rightarrow${:.2}'.format(moon.calculate_moon_phase(sun, times[0]),
-                                                                       moon.calculate_moon_phase(sun, times[-1])))
+        moon_scatter = ax2.scatter(step_times, az_moon, c=phase_moon, norm=Normalize(-1, 1), cmap='gray',
+                                   marker='o', s=40, edgecolors='black', linewidths=.8,
+                                   label=r'Moon (color $\rightarrow$ phase)')
+        cbar = fig.colorbar(moon_scatter, orientation='horizontal', pad=0.18)
+        cbar.set_ticks([1, 0, -1])
+        cbar.set_ticklabels(['New Moon', 'Quarter', 'Full Moon'])
+
+        tgt_scatter = ax2.scatter(step_times, az, marker='*', s=10, color='black', label='{}'.format(target.name))
+        ### DEBUG #######
+        ax2.scatter(step_times, az_ven, marker='s', s=10, color='red')
+        ### DEBUG #######
 
         # linee dei crepuscoli. I label sono definiti dopo.
-        ax2.vlines(sun_naut_twilights_0[0], 0, 360, linestyles='dashed', colors='b', label='Naut. twilight')
+        naut_twi = ax2.vlines(sun_naut_twilights_0[0], 0, 360, linestyles='dashed', colors='b', label='Naut. twilight')
         ax2.vlines(sun_naut_twilights_0[1], 0, 360, linestyles='dashed', colors='b')
-        ax2.vlines(sun_astr_twilights_0[0], 0, 360, linestyles='solid', colors='b', label='Astr. twilight')
+        astr_twi = ax2.vlines(sun_astr_twilights_0[0], 0, 360, linestyles='solid', colors='b', label='Astr. twilight')
         ax2.vlines(sun_astr_twilights_0[1], 0, 360, linestyles='solid', colors='b')
 
         # plot dell'alba e del tramonto del Sole
-        ax2.vlines(sunset, 0, 360, linestyles='dotted', colors='b', linewidth=1, label='Sun set/rise')
+        sun_riseset = ax2.vlines(sunset, 0, 360, linestyles='dotted', colors='b', linewidth=1, label='Sun set/rise')
         ax2.vlines(sunrise, 0, 360, linestyles='dotted', colors='b', linewidth=1)
 
-        ax2.legend(loc='best')
+        ax2.legend(handles=[tgt_scatter, moon_scatter, sun_riseset, naut_twi, astr_twi],
+                   loc='best')
 
         # gestione dei tick degli azimut.
         ax2.set_ylim(0, 360)
@@ -725,5 +756,5 @@ class Observation:
         ax1.set_xlim(min(step_times), max(step_times))
         ax2.set_xlim(min(step_times), max(step_times))
 
-        fig.tight_layout()
+        fig.tight_layout(h_pad=0.5)
         fig.show()
