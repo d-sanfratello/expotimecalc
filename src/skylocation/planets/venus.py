@@ -18,10 +18,10 @@ class Venus(Planet):
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
 
-        planet = pk.planet.jpl_lp('venus')
-        epoch = pk.epoch_from_string(Equinox2000.time.iso)
+        self.ephemeris = pk.planet.jpl_lp('venus')
+        epoch = pk.epoch_from_string(obstime.iso)
 
-        __semimaj, __ecc, __inclination, __ra_an, __peri_arg, __mean_anomaly = planet.osculating_elements(epoch)
+        __semimaj, __ecc, __inclination, __ra_an, __peri_arg, __mean_anomaly = self.ephemeris.osculating_elements(epoch)
         __semimaj *= u.m
         __semimaj = __semimaj.to(cts.au)
 
@@ -36,4 +36,4 @@ class Venus(Planet):
 
         super(Venus, self).__init__(obstime, semimaj=__semimaj, eccentricity=__ecc, longitude_an=__longitude_an,
                                     inclination=__inclination, argument_perihelion=__peri_arg,
-                                    mean_anomaly=__mean_anomaly, name='Venus', epoch='J2000', is_earth=False)
+                                    mean_anomaly=__mean_anomaly, name='Venus', epoch=obstime.iso, is_earth=False)
