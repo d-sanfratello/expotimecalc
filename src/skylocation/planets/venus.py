@@ -36,4 +36,4 @@ class Venus(Planet):
 
         super(Venus, self).__init__(obstime, semimaj=__semimaj, eccentricity=__ecc, longitude_an=__longitude_an,
                                     inclination=__inclination, argument_perihelion=__peri_arg,
-                                    mean_anomaly=__mean_anomaly, name='Venus', epoch='J2000')
+                                    mean_anomaly=__mean_anomaly, name='Venus', epoch='J2000', is_earth=False)

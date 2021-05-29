@@ -18,9 +18,11 @@ from .. import errmsg
 
 
 class Planet(SkyLocation):
+    __private_arguments = ['is_earth']
+
     def __init__(self, obstime, *, semimaj, eccentricity, longitude_an, inclination,
                  argument_perihelion, mean_anomaly,
-                 name=None, epoch='J2000'):
+                 name=None, epoch='J2000', **kwargs):
 
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
@@ -37,6 +39,16 @@ class Planet(SkyLocation):
             raise TypeError(errmsg.notTypeError('argument_periapsis', 'astropy.coordinates.Angle'))
         if name is None:
             raise ValueError(errmsg.mustDeclareName)
+
+        if not bool(kwargs):
+            self.__is_earth = False
+        else:
+            k = kwargs.keys()
+            for _ in k:
+                if _ not in self.__private_arguments:
+                    raise KeyError(errmsg.keyError)
+                else:
+                    self.__is_earth = kwargs[_]
 
         self.__mass_sun = cts.M_sun
         self.__grav_const = cts.G * self.__mass_sun / (4 * np.pi ** 2)
@@ -75,6 +87,12 @@ class Planet(SkyLocation):
         #                   - self.heliocentric_earth_J2000.rotate('z', angle=self.year_revolution(obstime), copy=True)) \
         #     .rotate('z', angle=self.equinox_prec(obstime), copy=True) \
         #     .rotate('x', angle=self.axial_tilt(obstime), copy=True)
+        if self.__is_earth:
+            reference_observer = Versor(vector=np.zeros(3) * cts.au)
+        else:
+            from .earth import Earth
+            reference_observer = Earth(obstime=obstime).vector_obstime
+
         heliocentric = Versor(ra=0 * u.deg, dec=0 * u.deg, radius=self.distance_from_sun) \
             .rotate(axis='z', angle=self.revolution(obstime, reference=tJ2000), copy=True) \
             .rotate(axis='z', angle=self.mean_anomaly, copy=True) \
@@ -82,7 +100,7 @@ class Planet(SkyLocation):
             .rotate(axis='x', angle=self.inclination, copy=True) \
             .rotate(axis='z', angle=self.longitude_an, copy=True)
 
-        vector_obstime = (heliocentric - self.heliocentric_earth_J2000) \
+        vector_obstime = (heliocentric - reference_observer) \
             .rotate(axis='x', angle=self.axial_tilt(obstime), copy=True)  # check for rotate or rotate_inv
 
         return vector_obstime
@@ -114,6 +132,12 @@ class Planet(SkyLocation):
         return ((2 * np.pi / self.revolution_period.value) * (obstime - ref_time).jd) % (2 * np.pi) * u.rad
 
     def __initialize(self):
+        if self.__is_earth:
+            reference_observer = Versor(vector=np.zeros(3) * cts.au)
+        else:
+            from .earth import Earth
+            reference_observer = Earth(obstime=Equinox2000.time).vector_obstime
+
         self.helioc_eq2000 = Versor(ra=0 * u.deg, dec=0 * u.deg, radius=self.distance_from_sun) \
             .rotate(axis='z', angle=self.revolution(Equinox2000.time, reference=tJ2000), copy=True) \
             .rotate(axis='z', angle=self.mean_anomaly, copy=True) \
@@ -121,7 +145,7 @@ class Planet(SkyLocation):
             .rotate(axis='x', angle=self.inclination, copy=True) \
             .rotate(axis='z', angle=self.longitude_an, copy=True)
 
-        self.vector_epoch = (self.helioc_eq2000 - self.heliocentric_earth_J2000) \
+        self.vector_epoch = (self.helioc_eq2000 - reference_observer) \
             .rotate(axis='x', angle=self.axial_tilt(Equinox2000.time), copy=True)  # check for rotate or rotate_inv
 
     # # noinspection PyPep8Naming
@@ -145,12 +169,12 @@ class Planet(SkyLocation):
         return self.__semimaj
 
     @property
-    def semimin(self):
-        return self.semimaj * np.sqrt(1 - self.eccentricity**2)
-
-    @property
     def eccentricity(self):
         return self.__ecc
+
+    @property
+    def semimin(self):
+        return self.semimaj * np.sqrt(1 - self.eccentricity**2)
 
     @property
     def argument_perihelion(self):
@@ -178,3 +202,4 @@ class Planet(SkyLocation):
 
 
 from .venus import Venus
+from .earth import Earth

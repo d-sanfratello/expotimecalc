@@ -37,4 +37,3 @@ class Earth(Planet):
         super(Earth, self).__init__(obstime, semimaj=__semimaj, eccentricity=__ecc, longitude_an=__longitude_an,
                                     inclination=__inclination, argument_perihelion=__peri_arg,
                                     mean_anomaly=__mean_anomaly, name='Earth', epoch='J2000', is_earth=True)
-
