@@ -622,7 +622,10 @@ class Observation:
             sunset = self.calculate_set_time(sun, location, obstime - 1 * u.day)
         sunrise = self.calculate_rise_time(sun, location, sunset)
 
-        step_times = np.arange(sunset.mjd - step_mjd, sunrise.mjd + step_mjd, step_mjd)
+        time_limits = [self.__find_edge_time(sunset - interval, 'lower'),
+                       self.__find_edge_time(sunrise + interval, 'upper')]
+
+        step_times = np.arange(time_limits[0].mjd, time_limits[1].mjd, step_mjd)
         times = Time(step_times, format='mjd')
         ### DEBUG #######
         aa_frames = AltAz(location=loc, obstime=times)
@@ -687,7 +690,7 @@ class Observation:
         airmasses = np.concatenate((np.arange(1., 1.1, 0.05),
                                     np.arange(1.1, 1.3, 0.1),
                                     np.arange(1.3, 1.6, 0.2),
-                                    np.arange(2, 3, 1)))
+                                    np.arange(2, 3.5, 1)))
         airmasses_ticks = ['{:1.2f}'.format(tick) for tick in airmasses]
         alt_ticks = 90 - np.rad2deg(np.arccos(1 / airmasses))
         ax1_.yaxis.set_major_locator(mticker.FixedLocator(alt_ticks * u.deg))
@@ -758,3 +761,36 @@ class Observation:
 
         fig.tight_layout(h_pad=0.5)
         fig.show()
+
+    @staticmethod
+    def __find_edge_time(time, bound):
+        str_time = time.iso
+        mins = int(str_time[14:16]) + float(str_time[17:]) / 60
+
+        if bound == 'lower':
+            if 0 < mins <= 15:
+                new_str = str_time[:14] + '00:00.000'
+            elif 15 < mins <= 30:
+                new_str = str_time[:14] + '15:00.000'
+            elif 30 < mins <= 45:
+                new_str = str_time[:14] + '30:00.000'
+            elif 45 < mins <= (60 - 1 / 3600):
+                new_str = str_time[:14] + '45:00.000'
+        elif bound == 'upper':
+            if 0 <= mins < 15:
+                new_str = str_time[:14] + '15:00.000'
+            elif 15 <= mins < 30:
+                new_str = str_time[:14] + '30:00.000'
+            elif 30 <= mins < 45:
+                new_str = str_time[:14] + '45:00.000'
+            elif 45 <= mins < (60 - 0.001 / 3600):
+                hour = int(str_time[11:13])
+
+                if hour == 23:
+                    new_time = Time(np.ceil(time.mjd), format='mjd')
+                    new_time.format = 'iso'
+                    return new_time
+                else:
+                    new_str = str_time[:11] + '{:02d}:00:00.000'.format(int(str_time[11:13]) + 1)
+
+        return Time(new_str, format='iso', scale='utc')
