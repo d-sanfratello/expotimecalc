@@ -128,6 +128,8 @@ class Planet(SkyLocation):
         self.__logger.debug(f'ra-dec set by `at_date` method at {self.ra.hms}, {self.dec.deg}')
 
     def __approx_ecc_anomaly(self):
+        # Method:
+        #  1998aalg.book.....M (p196)
         mean = self.mean_anomaly.to(u.rad)
 
         ecc_an = mean
