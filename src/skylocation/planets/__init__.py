@@ -88,7 +88,7 @@ class Planet(SkyLocation):
 
         if self.__is_earth:
             self.__logger.info(f'It is Earth. Defining reference at the center of heliocentric ecliptic '
-                                f'coordinates.')
+                               f'coordinates.')
             reference_observer = Versor(vector=np.zeros(3) * cts.au)
             self.__logger.debug(f'reference observer (Sun) is {reference_observer.vsr}, {reference_observer.radius}')
         else:
