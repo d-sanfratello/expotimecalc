@@ -189,7 +189,6 @@ class Planet(SkyLocation):
 
     @property
     def distance_from_sun(self):
-        # return 0.5 * (self.peri_dist + self.apo_dist)
         return self.semimaj * (1 - self.eccentricity * np.cos(self.eccentric_anomaly))
 
 

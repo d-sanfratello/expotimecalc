@@ -45,8 +45,7 @@ class SkyLocation(Location):
             elif isinstance(ra, Quantity):
                 ra = Longitude(ra)
             elif ra_unit == 'hour':
-                # 1h = 15°
-                ra *= 15
+                ra *= 15  # 1h = 15°
             elif ra_unit == 'deg':
                 ra = ra
             elif ra_unit == 'rad':
@@ -305,11 +304,6 @@ class SkyLocation(Location):
         # check for Earth Fact Sheet at https://nssdc.gsfc.nasa.gov/planetary/factsheet/earthfact.html [23.44]
         # check for Kenneth Seidelmann, "Explanatory Supplement to the astronomical almanac" p. 315.
         return 23.43929111 * u.deg
-
-    # noinspection PyPep8Naming
-    @property
-    def heliocentric_earth_J2000(self):
-        return Versor(vector=np.array([-1, 0, 0]) * u.AU)
 
 
 from . import sun
