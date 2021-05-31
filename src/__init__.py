@@ -33,11 +33,11 @@ moon_incl_to_ecliptic = 5.145396 * u.deg  # Expl. Suppl. p701
 tJ2000 = Time('J2000.0')
 sidday_diff = 1 * u.day - Tsidday
 
-logger = logging.getLogger('src')
-logger.setLevel(logging.WARNING)
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 ch = logging.StreamHandler()
 ch.setLevel(logger.getEffectiveLevel())
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(funcName)s:%(lineno)d - %(message)s')
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(name)s.%(funcName)s:%(lineno)d - %(message)s')
 ch.setFormatter(formatter)
 logger.addHandler(ch)
 
