@@ -55,6 +55,7 @@ class Planet(SkyLocation):
         self.__ecc = None
         self.__argument_pericenter = None
         self.__mean_anomaly = None
+        self.__eccentric_anomaly = None
         self.__inclination = None
         self.__longitude_an = None
 
@@ -73,7 +74,7 @@ class Planet(SkyLocation):
 
         __semimaj, __ecc, __inclination, __ra_an, __peri_arg, __mean_anomaly = self.ephemeris.osculating_elements(epoch)
         __semimaj *= u.m
-        self.__semimaj = __semimaj.to(cts.au)
+        self.__semimaj = __semimaj.to(u.AU)
 
         __inclination *= u.rad
         self.__inclination = Angle(__inclination.to(u.deg))
@@ -83,14 +84,15 @@ class Planet(SkyLocation):
 
         __peri_arg *= u.rad
         self.__argument_pericenter = Angle(__peri_arg.to(u.deg))
-        self.__ecc = __ecc
-        self.__mean_anomaly = __mean_anomaly
+        self.__ecc = np.float64(__ecc)
+
+        __mean_anomaly *= u.rad
+        self.__mean_anomaly = Angle(__mean_anomaly.to(u.deg))
+        self.__eccentric_anomaly = self.__approx_ecc_anomaly()
 
         if self.__is_earth:
-            self.__logger.info(f'It is Earth. Defining reference at the center of heliocentric ecliptic '
-                               f'coordinates.')
-            reference_observer = Versor(vector=np.zeros(3) * cts.au)
-            self.__logger.debug(f'reference observer (Sun) is {reference_observer.vsr}, {reference_observer.radius}')
+            self.__logger.info(f'It is Earth.')
+            self.__logger.debug(f'reference observer is the Sun')
         else:
             self.__logger.info(f'It is NOT Earth. Defining an `Earth` instance as reference')
             from .earth import Earth
@@ -99,13 +101,15 @@ class Planet(SkyLocation):
 
         self.__logger.info(f'Rotating body with osculating parameters from ephemeris')
         vector_obstime = Versor(vector=np.array([1, 0, 0]) * self.distance_from_sun) \
-            .rotate(axis='z', angle=self.mean_anomaly, copy=True) \
+            .rotate(axis='z', angle=self.true_anomaly, copy=True) \
             .rotate(axis='z', angle=self.argument_pericenter, copy=True) \
             .rotate(axis='x', angle=self.inclination, copy=True) \
             .rotate(axis='z', angle=self.longitude_an, copy=True)
 
-        vector_obstime = (vector_obstime - reference_observer) \
-            .rotate(axis='x', angle=self.axial_tilt(obstime), copy=True)  # check for rotate or rotate_inv
+        if not self.__is_earth:
+            vector_obstime = (vector_obstime - reference_observer) \
+                .rotate(axis='z', angle=self.equinox_prec(obstime), copy=True) \
+                .rotate(axis='x', angle=self.axial_tilt(obstime), copy=True)  # check for rotate or rotate_inv
 
         self.__logger.info(f'Body position estimated at {vector_obstime.ra.hms}, {vector_obstime.dec.deg}, '
                            f'{vector_obstime.radius}. Returning `vector_obstime` from `observe_at_date`.')
@@ -123,6 +127,17 @@ class Planet(SkyLocation):
         self.dec = self.vector_obstime.dec
         self.__logger.debug(f'ra-dec set by `at_date` method at {self.ra.hms}, {self.dec.deg}')
 
+    def __approx_ecc_anomaly(self):
+        mean = self.mean_anomaly.to(u.rad)
+
+        ecc_an = mean
+        ecc_an_next = mean - self.eccentricity * np.sin(ecc_an) * u.rad
+        while abs(ecc_an_next.to(u.deg) - ecc_an.to(u.deg)) > (1e-4 * u.arcsec).to(u.deg):
+            ecc_an = ecc_an_next
+            ecc_an_next = mean - self.eccentricity * np.sin(ecc_an) * u.rad
+
+        return Angle(ecc_an_next.to(u.deg))
+
     @property
     def longitude_an(self):
         return self.__longitude_an
@@ -139,7 +154,6 @@ class Planet(SkyLocation):
     def eccentricity(self):
         return self.__ecc
 
-    # noinspection PyTypeChecker
     @property
     def semimin(self):
         return self.semimaj * np.sqrt(1 - self.eccentricity**2)
@@ -153,22 +167,30 @@ class Planet(SkyLocation):
         return self.__mean_anomaly
 
     @property
+    def eccentric_anomaly(self):
+        return self.__eccentric_anomaly
+
+    @property
+    def true_anomaly(self):
+        return (2 * np.arctan(np.sqrt((1 + self.eccentricity) / (1 - self.eccentricity))
+                              * np.tan(self.eccentric_anomaly / 2))).to(u.deg)
+
+    @property
     def inclination(self):
         return self.__inclination
 
-    # noinspection PyTypeChecker
     @property
     def peri_dist(self):
         return self.semimaj * (1 - self.eccentricity)
 
-    # noinspection PyTypeChecker
     @property
     def apo_dist(self):
         return self.semimaj * (1 + self.eccentricity)
 
     @property
     def distance_from_sun(self):
-        return 0.5 * (self.peri_dist + self.apo_dist)
+        # return 0.5 * (self.peri_dist + self.apo_dist)
+        return self.semimaj * (1 - self.eccentricity * np.cos(self.eccentric_anomaly))
 
 
 from .venus import Venus

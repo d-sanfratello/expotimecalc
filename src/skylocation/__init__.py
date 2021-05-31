@@ -1,7 +1,6 @@
 import logging
 import numpy as np
 
-from astropy import constants as cts
 from astropy import units as u
 from astropy.coordinates.angles import Latitude
 from astropy.coordinates.angles import Longitude
@@ -95,7 +94,7 @@ class SkyLocation(Location):
         else:
             self.obstime = obstime
         self.epoch = Time(epoch)
-        # self.epoch_eq = self.equinoxes[self.epoch_rel_eq[epoch]]
+        self.name = self.name_object(name, epoch)
         self.__logger.debug(f'`obstime` set to {self.obstime}.')
 
         # Inizializzo il versore delle coordinate con le coordinate all'epoca indicata. Viene anche salvata la norma
@@ -124,8 +123,6 @@ class SkyLocation(Location):
 
             # Compio le correzioni per la data di osservazione.
             self.at_date(self.obstime)
-
-        self.name = self.name_object(name, epoch)
 
     def convert_to_epoch(self, obstime, epoch='J2000'):
         """
@@ -312,7 +309,7 @@ class SkyLocation(Location):
     # noinspection PyPep8Naming
     @property
     def heliocentric_earth_J2000(self):
-        return Versor(vector=np.array([-1, 0, 0]) * cts.au)
+        return Versor(vector=np.array([-1, 0, 0]) * u.AU)
 
 
 from . import sun
