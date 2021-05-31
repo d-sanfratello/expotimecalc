@@ -1,6 +1,7 @@
-__version__ = "1.1.1"
+__version__ = "1.2.0-a.1"
 __author__ = "Daniele Sanfratello"
 
+import logging
 import numpy as np
 
 from astropy import units as u
@@ -32,6 +33,13 @@ moon_incl_to_ecliptic = 5.145396 * u.deg  # Expl. Suppl. p701
 tJ2000 = Time('J2000.0')
 sidday_diff = 1 * u.day - Tsidday
 
+logger = logging.getLogger('src')
+logger.setLevel(logging.WARNING)
+ch = logging.StreamHandler()
+ch.setLevel(logging.WARNING)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+ch.setFormatter(formatter)
+logger.addHandler(ch)
 
 def hms2deg(hms):
     """
@@ -150,14 +158,19 @@ class Versor:
         Classe che accetta delle coordinate equatoriali o un vettore in coordinate cartesiane e genera il versore che
         punta quelle coordinate.
         """
+        self.__logger = logging.getLogger('src.Versor')
+        self.__logger.setLevel(logging.DEBUG)
+
         if (ra is None and dec is None) and vector is None:
             raise ValueError(errmsg.versorError)
 
         if vector is None:
             if not isinstance(ra, u.quantity.Quantity) and not isinstance(dec, u.quantity.Quantity):
                 if unit is None:
+                    self.__logger.critical('Error!')
                     raise ValueError(errmsg.specifyUnitError)
                 elif unit not in ['deg', 'rad', 'hmsdms']:
+                    self.__logger.critical('Error!')
                     raise ValueError(errmsg.invalidUnitError)
 
         if ra is not None and dec is not None:
@@ -183,6 +196,8 @@ class Versor:
             if not isinstance(ra, Longitude):
                 self.ra = Longitude(self.ra)
 
+            self.__logger.debug(f'Generating vector with ra-dec: {self.ra}, {self.dec}')
+
             ra = self.ra.rad
             dec = self.dec.rad
 
@@ -191,17 +206,21 @@ class Versor:
                 self.radius = 1
             else:
                 self.radius = radius
+            self.__logger.debug(f'Vector has radius: {self.radius}')
 
             # Date le coordinate equatoriali, viene generato il vettore che punti quelle coordinate. L'asse x è il punto
             # vernale, l'asse z indica il Polo Nord Celeste e l'asse y è definito per completare la terna ortogonale.
             self.vsr = np.array([np.cos(dec) * np.cos(ra),
                                  np.cos(dec) * np.sin(ra),
                                  np.sin(dec)], dtype=np.float64)
+            self.__logger.debug(f'Vector has versor: {self.vsr}')
         else:
             # Se viene fornito il vettore, questo viene intanto normalizzato, salvando la norma dello stesso.
             self.radius = np.sqrt((vector**2).sum())
+            self.__logger.debug(f'Generating vector with radius: {self.radius}')
             if self.radius != 0:
                 self.vsr = np.copy(vector) / self.radius
+                self.__logger.debug(f'Vector has versor: {self.vsr}')
 
                 # Dalle coordinate si ricavano RA e DEC e si convertono in oggetti `Longitude` e `Latitude`,
                 # rispettivamente.
@@ -209,9 +228,11 @@ class Versor:
                 self.dec = np.arctan2(self.vsr[2], np.sqrt(self.vsr[0]**2 + self.vsr[1]**2))
             else:
                 self.vsr = np.zeros(3)
+                self.__logger.debug(f'Vector has versor: {self.vsr}')
 
                 self.ra = 0 * u.deg
                 self.dec = 0 * u.deg
+
 
         if isinstance(self.ra, u.Quantity):
             self.ra = self.ra.to(u.deg)
@@ -223,6 +244,7 @@ class Versor:
             self.dec = Latitude(self.dec)
         else:
             self.dec = Latitude(np.rad2deg(self.dec) * u.deg)
+        self.__logger.debug(f'Vector has ra-dec: {self.ra}, {self.dec}')
 
     def rotate(self, axis, angle, unit='rad', copy=False):
         """
@@ -235,7 +257,9 @@ class Versor:
 
         vsr /= np.sqrt((vsr**2).sum())
 
+        self.__logger.debug(f'Rotating {self.vsr} around {axis} by {angle}')
         if copy:
+            self.__logger.debug('Returning new versor.')
             return Versor(vector=vsr * self.radius)
         else:
             self.vsr = vsr
@@ -251,7 +275,9 @@ class Versor:
 
         vsr /= np.sqrt((vsr**2).sum())
 
+        self.__logger.debug(f'Rotating {self.vsr} around {axis} by {angle}')
         if copy:
+            self.__logger.debug('Returning new versor.')
             return Versor(vector=vsr * self.radius)
         else:
             self.vsr = vsr

@@ -2,6 +2,7 @@ from astropy import units as u
 from astropy.coordinates.angles import Latitude
 from astropy.coordinates.angles import Longitude
 from astropy.units.quantity import Quantity
+import logging
 import numpy as np
 
 from ..time import Time
@@ -12,6 +13,7 @@ from .. import Equinox2000
 from .. import Tsidday
 
 from .. import errmsg
+from .. import logger
 
 
 class Location:
@@ -64,7 +66,12 @@ class Location:
         if not isinstance(in_sky, bool):
             raise TypeError(errmsg.notTypeError('is_sky', 'bool'))
 
+        self.__logger = logging.getLogger('src.location.Location')
+        self.__logger.setLevel(logger.getEffectiveLevel())
+        self.__logger.debug('Getting inside `Location` class.')
+
         self.__in_sky = in_sky
+        self.__logger.debug(f'`Location` is in sky: {self.__in_sky}')
 
         # Controlla le coordinate o le interpreta dalla stringa, assegnandole a degli oggetti
         # `astropy.coordinates.angles.Latitude` e `astropy.coordinates.angles.Longitude`.
@@ -95,18 +102,21 @@ class Location:
 
         self.lat = lat
         self.lon = lon
+        self.__logger.debug(f'lat and lon set to {self.lat}, {self.lon}')
 
         # Se non è assegnata alcuna data di osservazione, viene indicata la data dell'equinozio vernale del 2000.
         if obstime is None:
             self.obstime = Equinox2000.time
         else:
             self.obstime = obstime
+        self.__logger.debug(f'`Location.obstime` set to {self.obstime}.')
 
         if not self.__in_sky:
             # Se l'oggetto ha coordinate terrestri, viene salvato il fuso orario e vengono assegnate le posizioni, in
             # coordinate celesti, dello zenith all'equinozio 2000 e alla data. Inoltre, per comodità, anche se poi non
             # sono utilizzate altrove, vengono anche fornite le coordinate degli assi che identificano il nord e l'est
             # locali.
+            self.__logger.debug('Location is on Earth. Defining location-specific quantities.')
             if timezone is None:
                 self.timezone = 0 * u.hour
             else:
@@ -123,6 +133,8 @@ class Location:
                                dec=0 * u.deg)
 
             self.zenith_at_date(self.obstime, copy=False)
+        else:
+            self.__logger.debug('Location is in the sky. Exiting `Location` class initialization.')
 
     def zenith_at_date(self, obstime, axis=None, copy=True):
         """

@@ -1,3 +1,4 @@
+import logging
 import numpy as np
 
 from astropy import constants as cts
@@ -19,6 +20,7 @@ from .. import Equinox2000
 from .. import tJ2000
 
 from .. import errmsg
+from .. import logger
 
 
 class SkyLocation(Location):
@@ -73,14 +75,20 @@ class SkyLocation(Location):
         if name is not None and not isinstance(name, str):
             raise TypeError(errmsg.notTwoTypesError.format('name', 'Nonetype', 'string'))
 
+        self.__logger = logging.getLogger('src.skylocation.SkyLocation')
+        self.__logger.setLevel(logger.getEffectiveLevel())
+        self.__logger.debug('Getting inside `SkyLocation` class.')
+
         # Inizializzo la classe "genitore" `Location` per interpretare correttamente la stringa o le coordinate fornite
         # dall'utente.
+        self.__logger.debug('Initializing superclass.')
         super(SkyLocation, self).__init__(locstring, lat=dec, lon=ra, in_sky=True)
 
         # Per evitare confusione elimino gli attributi `lat` e `lon` ereditati da `Location` e li definisco come `ra` e
         # `dec`, definiti all'epoca in cui ho fornito le coordinate.
         self.dec_epoch = self.__dict__.pop('lat')
         self.ra_epoch = self.__dict__.pop('lon')
+        self.__logger.debug(f'`lat` and `lon` attributes have been popped in favour of `dec_epoch` and `ra_epoch`.')
 
         if obstime is None:
             # Se nessuna data di osservazione è fornita, viene usata la data dell'equinozio vernale del 2000.
@@ -88,21 +96,28 @@ class SkyLocation(Location):
         else:
             self.obstime = obstime
         self.epoch = Time(epoch)
-        self.epoch_eq = self.equinoxes[self.epoch_rel_eq[epoch]]
+        # self.epoch_eq = self.equinoxes[self.epoch_rel_eq[epoch]]
+        self.__logger.debug(f'`SkyLocation.obstime` set to {self.obstime}.')
 
         # Inizializzo il versore delle coordinate con le coordinate all'epoca indicata. Viene anche salvata la norma
         # del vettore.
+        self.__logger.debug('Saving distance and generating epoch vector. Initializing `SkyLocation.vector_obstime` '
+                            'to `None`.')
         self.distance = distance
         self.vector_epoch = Versor(self.ra_epoch, self.dec_epoch, radius=self.distance)
-        self.vector_obstime = None
+        if not hasattr(self, 'vector_obstime'):
+            self.__logger.debug('Instance has no `vector_obstime` attribute defined. Creating one.')
+            self.vector_obstime = None
 
         # Se è fornita una data, inizializzo le coordinate a quella data.
         if obstime is not None:
+            self.__logger.debug(f'{obstime} is not None: converting to epoch {obstime}')
             self.ra = ra
             self.dec = dec
 
             self.convert_to_epoch(obstime)
         else:
+            self.__logger.debug(f'{obstime} is None: up to call `SkyLocation.at_date` method.')
             self.ra = None
             self.dec = None
 
@@ -110,6 +125,7 @@ class SkyLocation(Location):
             self.at_date(self.obstime)
 
         self.name = self.name_object(name, epoch)
+        self.__logger.debug('Exiting `SkyLocation` class initialization.')
 
     def convert_to_epoch(self, obstime, epoch='J2000'):
         """
@@ -121,18 +137,16 @@ class SkyLocation(Location):
         if epoch not in ['J2000']:
             raise ValueError(errmsg.invalidEpoch)
 
-        old_eq = self.epoch_eq
-        epoch_eq = self.equinoxes[self.epoch_rel_eq[epoch]]
-
         # Il vettore che contiene le coordinate all'epoca viene convertito in coordinate eclittiche e viene applicata la
         # precessione degli equinozi, riportando poi la posizione in coordinate equatoriali. Dato che non è considerata
         # la nutazione, la rotazione intorno all'asse x è, di fatto, un semplice cambio di base.
-        self.vector_epoch = self.vector_epoch.rotate_inv('x', self.axial_tilt(old_eq.time), copy=True)\
-            .rotate('z', self.equinox_prec(obstime, self.epoch_rel_eq[epoch]), copy=True)\
-            .rotate('x', self.axial_tilt(epoch_eq.time), copy=True)
+        self.vector_epoch = self.vector_epoch.rotate_inv('x', self.axial_tilt(self.epoch), copy=True)\
+            .rotate('z', self.equinox_prec(obstime, self.epoch_rel_eq[epoch]), copy=True)
+
+        epoch_eq = self.equinoxes[self.epoch_rel_eq[epoch]]
+        self.vector_epoch = self.vector_epoch.rotate('x', self.axial_tilt(epoch_eq.time), copy=True)
 
         self.epoch = Time(epoch).utc
-        self.epoch_eq = epoch_eq
 
         # Vengono aggiornate le coordinate che indicano la posizione all'epoca.
         self.ra_epoch = self.vector_epoch.ra
@@ -145,6 +159,7 @@ class SkyLocation(Location):
         """
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
+        self.__logger.debug(f'`SkyLocation.observe_at_date({obstime})` method (parent of {self.name})')
 
         # La posizione all'epoca viene portata in coordinate eclittiche, viene applicato l'effetto della precessione e
         # viene riportata in coordinate equatoriali.
@@ -163,6 +178,7 @@ class SkyLocation(Location):
         """
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
+        self.__logger.debug(f'`SkyLocation.at_date({obstime})` method (parent of {self.name}).')
 
         self.obstime = obstime
         self.vector_obstime = self.observe_at_date(obstime)

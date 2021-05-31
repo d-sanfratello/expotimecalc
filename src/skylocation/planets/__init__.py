@@ -1,3 +1,4 @@
+import logging
 import numpy as np
 import pykep as pk
 # https://ui.adsabs.harvard.edu/abs/2015arXiv151100821I/abstract
@@ -17,8 +18,10 @@ from .. import tJ2000
 from ... import Tsidyear
 
 from .. import errmsg
+from .. import logger
 
 
+# noinspection PyUnresolvedReferences
 class Planet(SkyLocation):
     __private_arguments = ['is_earth']
 
@@ -38,6 +41,12 @@ class Planet(SkyLocation):
                     raise KeyError(errmsg.keyError)
                 else:
                     self.__is_earth = kwargs[_]
+        self.__logger = logging.getLogger('src.skylocation.planets.Planet')
+        self.__logger.setLevel(logger.getEffectiveLevel())
+        self.__logger.debug('Getting inside `Planet` class')
+
+        self.__logger.info(f'instance of {name}')
+        self.__logger.debug(f'{name} is earth: {self.__is_earth}')
 
         self.__mass_sun = cts.M_sun
         self.__grav_const = cts.G * self.__mass_sun / (4 * np.pi ** 2)
@@ -49,15 +58,19 @@ class Planet(SkyLocation):
         self.__inclination = None
         self.__longitude_an = None
 
+        self.__logger.debug(f'Up to call `{name}.at_date` method')
         self.at_date(obstime)
 
+        self.__logger.debug('Initializing superclass.')
         super(Planet, self).__init__(locstring=None, ra=self.vector_obstime.ra, dec=self.vector_obstime.dec,
                                      distance=self.distance_from_sun, obstime=obstime,
                                      ra_unit='deg', dec_unit='deg', epoch=epoch, name=name)
+        self.__logger.debug('Exiting `Planet` class initialization.')
 
     def observe_at_date(self, obstime):
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
+        self.__logger.debug(f'`Planet.observe_at_date({obstime})` call.')
 
         epoch = pk.epoch_from_string(obstime.iso)
 
@@ -77,11 +90,17 @@ class Planet(SkyLocation):
         self.__mean_anomaly = __mean_anomaly
 
         if self.__is_earth:
+            self.__logger.info(f'It is Earth. Defining reference at the center of heliocentric ecliptic '
+                                f'coordinates.')
             reference_observer = Versor(vector=np.zeros(3) * cts.au)
+            self.__logger.debug(f'reference observer (Sun) is {reference_observer.vsr}, {reference_observer.radius}')
         else:
+            self.__logger.info(f'It is NOT Earth. Defining an `Earth` instance as reference')
             from .earth import Earth
             reference_observer = Earth(obstime=obstime).vector_obstime
+            self.__logger.debug(f'Earth reference defined as {reference_observer.vsr}, {reference_observer.radius}')
 
+        self.__logger.info(f'Rotating body with osculating parameters from ephemeris')
         vector_obstime = Versor(vector=np.array([1, 0, 0]) * self.distance_from_sun) \
             .rotate(axis='z', angle=self.mean_anomaly, copy=True) \
             .rotate(axis='z', angle=self.argument_pericenter, copy=True) \
@@ -91,16 +110,22 @@ class Planet(SkyLocation):
         vector_obstime = (vector_obstime - reference_observer) \
             .rotate(axis='x', angle=self.axial_tilt(obstime), copy=True)  # check for rotate or rotate_inv
 
+        self.__logger.info(f'Body position estimated at {vector_obstime.ra.hms}, {vector_obstime.dec.deg}, '
+                           f'{vector_obstime.radius}. Returning `vector_obstime` from `observe_at_date`.')
         return vector_obstime
 
     def at_date(self, obstime):
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
+        self.__logger.debug(f'Started `Planet.at_date({obstime})`')
 
         self.obstime = obstime
+
+        self.__logger.debug(f'Calling `observe_at_date({obstime})` to initialize `Planet.vector_obstime`.')
         self.vector_obstime = self.observe_at_date(obstime)
         self.ra = self.vector_obstime.ra
         self.dec = self.vector_obstime.dec
+        self.__logger.debug(f'ra-dec set by `at_date` method at {self.ra.hms}, {self.dec.deg}. Exiting method.')
 
     @property
     def longitude_an(self):
