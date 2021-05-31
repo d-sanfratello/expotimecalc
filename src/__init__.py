@@ -36,8 +36,8 @@ sidday_diff = 1 * u.day - Tsidday
 logger = logging.getLogger('src')
 logger.setLevel(logging.WARNING)
 ch = logging.StreamHandler()
-ch.setLevel(logging.WARNING)
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+ch.setLevel(logger.getEffectiveLevel())
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(funcName)s:%(lineno)d - %(message)s')
 ch.setFormatter(formatter)
 logger.addHandler(ch)
 
