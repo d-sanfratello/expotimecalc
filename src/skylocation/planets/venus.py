@@ -15,9 +15,8 @@ class Venus(Planet):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
         self.__logger = logging.getLogger('src.skylocation.planets.venus.Venus')
         self.__logger.setLevel(logger.getEffectiveLevel())
+        self.__logger.debug('Initializing Venus.')
 
         self.ephemeris = pk.planet.jpl_lp('venus')
 
-        self.__logger.debug('Initializing Venus\' superclass.')
         super(Venus, self).__init__(obstime, name='Venus', epoch=obstime.iso, is_earth=False)
-        self.__logger.debug('Exiting `Venus` class initialization.')

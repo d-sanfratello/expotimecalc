@@ -43,8 +43,8 @@ class Planet(SkyLocation):
                     self.__is_earth = kwargs[_]
         self.__logger = logging.getLogger('src.skylocation.planets.Planet')
         self.__logger.setLevel(logger.getEffectiveLevel())
-        self.__logger.debug('Getting inside `Planet` class')
 
+        self.__logger.debug('Initializing `Planet` class')
         self.__logger.info(f'instance of {name}')
         self.__logger.debug(f'{name} is earth: {self.__is_earth}')
 
@@ -58,19 +58,16 @@ class Planet(SkyLocation):
         self.__inclination = None
         self.__longitude_an = None
 
-        self.__logger.debug(f'Up to call `{name}.at_date` method')
         self.at_date(obstime)
 
-        self.__logger.debug('Initializing superclass.')
         super(Planet, self).__init__(locstring=None, ra=self.vector_obstime.ra, dec=self.vector_obstime.dec,
                                      distance=self.distance_from_sun, obstime=obstime,
                                      ra_unit='deg', dec_unit='deg', epoch=epoch, name=name)
-        self.__logger.debug('Exiting `Planet` class initialization.')
 
     def observe_at_date(self, obstime):
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
-        self.__logger.debug(f'`Planet.observe_at_date({obstime})` call.')
+        self.__logger.debug(f'`obstime`: {obstime} call.')
 
         epoch = pk.epoch_from_string(obstime.iso)
 
@@ -117,15 +114,14 @@ class Planet(SkyLocation):
     def at_date(self, obstime):
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
-        self.__logger.debug(f'Started `Planet.at_date({obstime})`')
+        self.__logger.debug(f'obstime: {obstime}')
 
         self.obstime = obstime
 
-        self.__logger.debug(f'Calling `observe_at_date({obstime})` to initialize `Planet.vector_obstime`.')
         self.vector_obstime = self.observe_at_date(obstime)
         self.ra = self.vector_obstime.ra
         self.dec = self.vector_obstime.dec
-        self.__logger.debug(f'ra-dec set by `at_date` method at {self.ra.hms}, {self.dec.deg}. Exiting method.')
+        self.__logger.debug(f'ra-dec set by `at_date` method at {self.ra.hms}, {self.dec.deg}')
 
     @property
     def longitude_an(self):

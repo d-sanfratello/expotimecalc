@@ -34,7 +34,7 @@ tJ2000 = Time('J2000.0')
 sidday_diff = 1 * u.day - Tsidday
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.WARNING)
 ch = logging.StreamHandler()
 ch.setLevel(logger.getEffectiveLevel())
 formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(name)s.%(funcName)s:%(lineno)d - %(message)s')

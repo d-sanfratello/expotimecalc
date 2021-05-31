@@ -77,11 +77,10 @@ class SkyLocation(Location):
 
         self.__logger = logging.getLogger('src.skylocation.SkyLocation')
         self.__logger.setLevel(logger.getEffectiveLevel())
-        self.__logger.debug('Getting inside `SkyLocation` class.')
+        self.__logger.debug('Initializing `SkyLocation`')
 
         # Inizializzo la classe "genitore" `Location` per interpretare correttamente la stringa o le coordinate fornite
         # dall'utente.
-        self.__logger.debug('Initializing superclass.')
         super(SkyLocation, self).__init__(locstring, lat=dec, lon=ra, in_sky=True)
 
         # Per evitare confusione elimino gli attributi `lat` e `lon` ereditati da `Location` e li definisco come `ra` e
@@ -97,7 +96,7 @@ class SkyLocation(Location):
             self.obstime = obstime
         self.epoch = Time(epoch)
         # self.epoch_eq = self.equinoxes[self.epoch_rel_eq[epoch]]
-        self.__logger.debug(f'`SkyLocation.obstime` set to {self.obstime}.')
+        self.__logger.debug(f'`obstime` set to {self.obstime}.')
 
         # Inizializzo il versore delle coordinate con le coordinate all'epoca indicata. Viene anche salvata la norma
         # del vettore.
@@ -108,6 +107,8 @@ class SkyLocation(Location):
         if not hasattr(self, 'vector_obstime'):
             self.__logger.debug('Instance has no `vector_obstime` attribute defined. Creating one.')
             self.vector_obstime = None
+        else:
+            self.__logger.debug('Found existing attribute `vector_obstime`.')
 
         # Se è fornita una data, inizializzo le coordinate a quella data.
         if obstime is not None:
@@ -125,7 +126,6 @@ class SkyLocation(Location):
             self.at_date(self.obstime)
 
         self.name = self.name_object(name, epoch)
-        self.__logger.debug('Exiting `SkyLocation` class initialization.')
 
     def convert_to_epoch(self, obstime, epoch='J2000'):
         """
@@ -159,7 +159,7 @@ class SkyLocation(Location):
         """
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
-        self.__logger.debug(f'`SkyLocation.observe_at_date({obstime})` method (parent of {self.name})')
+        self.__logger.debug(f'obstime: {obstime}')
 
         # La posizione all'epoca viene portata in coordinate eclittiche, viene applicato l'effetto della precessione e
         # viene riportata in coordinate equatoriali.
@@ -178,7 +178,7 @@ class SkyLocation(Location):
         """
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
-        self.__logger.debug(f'`SkyLocation.at_date({obstime})` method (parent of {self.name}).')
+        self.__logger.debug(f'obstime: {obstime}')
 
         self.obstime = obstime
         self.vector_obstime = self.observe_at_date(obstime)

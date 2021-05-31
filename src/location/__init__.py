@@ -68,7 +68,7 @@ class Location:
 
         self.__logger = logging.getLogger('src.location.Location')
         self.__logger.setLevel(logger.getEffectiveLevel())
-        self.__logger.debug('Getting inside `Location` class.')
+        self.__logger.debug('Initializing `Location` class.')
 
         self.__in_sky = in_sky
         self.__logger.debug(f'`Location` is in sky: {self.__in_sky}')
@@ -109,7 +109,7 @@ class Location:
             self.obstime = Equinox2000.time
         else:
             self.obstime = obstime
-        self.__logger.debug(f'`Location.obstime` set to {self.obstime}.')
+        self.__logger.debug(f'obstime: {obstime}')
 
         if not self.__in_sky:
             # Se l'oggetto ha coordinate terrestri, viene salvato il fuso orario e vengono assegnate le posizioni, in
@@ -134,7 +134,7 @@ class Location:
 
             self.zenith_at_date(self.obstime, copy=False)
         else:
-            self.__logger.debug('Location is in the sky. Exiting `Location` class initialization.')
+            self.__logger.debug('Location is in the sky.')
 
     def zenith_at_date(self, obstime, axis=None, copy=True):
         """
