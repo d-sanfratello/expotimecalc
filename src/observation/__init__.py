@@ -607,14 +607,6 @@ class Observation:
             return cls.calculate_culmination(target, location, obstime + delta_time + delta_time_1)
 
     def plot_altaz(self, target, location, obstime, sun, moon, interval=15*u.min):
-        ### DEBUG #######
-        from astropy.coordinates import solar_system_ephemeris, EarthLocation
-        from astropy.coordinates import get_body
-        from astropy.coordinates import AltAz
-
-        loc = EarthLocation(lon=self.location.lon, lat=self.location.lat, height=0*u.m)
-        solar_system_ephemeris.set('builtin')
-        ### DEBUG #######
         step_mjd = interval / (1 * u.d).to(interval.unit)
 
         sunset = self.calculate_set_time(sun, location, obstime)
@@ -627,14 +619,6 @@ class Observation:
 
         step_times = np.arange(time_limits[0].mjd, time_limits[1].mjd, step_mjd)
         times = Time(step_times, format='mjd')
-        ### DEBUG #######
-        aa_frames = AltAz(location=loc, obstime=times)
-        ven = get_body('venus', times, loc)
-        ven_altaz = ven.transform_to(aa_frames)
-
-        alt_ven = ven_altaz.alt
-        az_ven = ven_altaz.az
-        ### DEBUG #######
 
         alt = [self.calculate_alt(target, location, t) for t in times] * u.deg
         az = [self.calculate_az(target, location, t) for t in times] * u.deg
@@ -656,9 +640,6 @@ class Observation:
         ax1.scatter(step_times, alt_moon, c=phase_moon, norm=Normalize(-1, 1), cmap='gray',
                     marker='o', s=40, edgecolors='black', linewidths=.8)
         ax1.scatter(step_times, alt, marker='*', s=10, color='black')
-        ### DEBUG #######
-        ax1.scatter(step_times, alt_ven, marker='s', s=10, color='red')
-        ### DEBUG #######
 
         # linee dei crepuscoli. I label sono definiti dopo.
         ax1.vlines(sun_naut_twilights_0[0], -90, 90, linestyles='dashed', colors='b')
@@ -679,7 +660,7 @@ class Observation:
         ax1.hlines(0, min(step_times), max(step_times), linestyles='dotted', colors='b', linewidth=1)
 
         ax1.xaxis.set_major_locator(plt.MaxNLocator(len(times) - 1))
-        ax1.xaxis.set_ticks(times[0::5])
+        ax1.xaxis.set_ticks(times[0::4])
         ax1.set_xticklabels([])
         ax1.set_xlabel('')
         ax1.set_ylabel('Alt [deg]')
@@ -711,9 +692,6 @@ class Observation:
         cbar.set_ticklabels(['New Moon', 'Quarter', 'Full Moon'])
 
         tgt_scatter = ax2.scatter(step_times, az, marker='*', s=10, color='black', label='{}'.format(target.name))
-        ### DEBUG #######
-        ax2.scatter(step_times, az_ven, marker='s', s=10, color='red')
-        ### DEBUG #######
 
         # linee dei crepuscoli. I label sono definiti dopo.
         naut_twi = ax2.vlines(sun_naut_twilights_0[0], 0, 360, linestyles='dashed', colors='b', label='Naut. twilight')
@@ -732,8 +710,8 @@ class Observation:
         ax2.set_ylim(0, 360)
         ax2.yaxis.set_ticks(np.linspace(0, 360, 13))
         ax2.xaxis.set_major_locator(plt.MaxNLocator(len(step_times) - 1))
-        ax2.xaxis.set_ticks(step_times[0::5])
-        times_labs = times[0::5]
+        ax2.xaxis.set_ticks(step_times[0::4])
+        times_labs = times[0::4]
         labels = [l.iso[11:16] for l in times_labs]
         ax2.set_xticklabels(labels)
         ax2.xaxis.set_tick_params(rotation=80)
