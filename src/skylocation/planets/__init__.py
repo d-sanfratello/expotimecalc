@@ -7,15 +7,10 @@ from astropy import units as u
 from astropy import constants as cts
 from astropy.coordinates import Angle
 from astropy.coordinates.angles import Longitude
-from numbers import Number
 
 from .. import Versor
 from ...time import Time
 from .. import SkyLocation
-
-from .. import Equinox2000
-from .. import tJ2000
-from ... import Tsidyear
 
 from .. import errmsg
 from .. import logger

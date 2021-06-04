@@ -15,7 +15,7 @@ from skyfield import almanac
 
 from .time import Time
 
-from . import constants as ct
+from . import constants
 from . import warnmsg
 from . import errmsg
 

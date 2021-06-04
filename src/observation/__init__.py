@@ -16,8 +16,8 @@ from ..skylocation.sun import Sun
 from ..skylocation.moon import Moon
 from ..time import Time
 
-from .. import Tsidday
-from .. import Tsidyear
+from ..constants import Tsidday
+from ..constants import Tsidyear
 from .. import Equinox2000
 
 from .. import errmsg

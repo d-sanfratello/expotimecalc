@@ -22,7 +22,8 @@ Jyear = Constant(abbrev='J_year',
                  name='Julian year',
                  value=365.25 * u.day,
                  unit='day',
-                 uncertainty=0)
+                 uncertainty=0,
+                 reference='')
 
 Tprec = Constant(abbrev='T_prec',
                  name='Equinox precession period',
@@ -51,4 +52,5 @@ sidday_diff = Constant(abbrev='sidday_diff',
                        name='Difference between one julian day and one sidereal day',
                        value=1 * u.day - Tsidday,
                        unit='day',
-                       uncertainty=0)
+                       uncertainty=0,
+                       reference='')

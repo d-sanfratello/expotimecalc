@@ -6,7 +6,7 @@ from astropy import constants as cts
 from ..time import Time
 from ..skylocation import SkyLocation
 
-from .. import Tsidyear
+from ..constants import Tsidyear
 from .. import Equinox2000
 
 from .. import errmsg

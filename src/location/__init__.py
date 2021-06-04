@@ -10,7 +10,7 @@ from .. import Versor
 
 from .. import dms2deg
 from .. import Equinox2000
-from .. import Tsidday
+from ..constants import Tsidday
 
 from .. import errmsg
 from .. import logger

@@ -13,10 +13,9 @@ from .. import Versor
 from .. import hms2deg
 from .. import dms2deg
 
-from .. import Tprec
-from .. import Tsidyear
+from ..constants import Tprec
+from ..constants import Tsidyear
 from .. import Equinox2000
-from .. import tJ2000
 
 from .. import errmsg
 from .. import logger

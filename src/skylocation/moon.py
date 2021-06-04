@@ -5,7 +5,7 @@ from astropy import units as u
 from ..time import Time
 from ..skylocation import SkyLocation
 
-from .. import Omegasidmoon
+from ..constants import Omegasidmoon
 from .. import Equinox2000
 
 from .. import errmsg
