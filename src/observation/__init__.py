@@ -77,11 +77,12 @@ class Observation:
         # Per il calcolo del LST, viene chiamato il metodo apposito della classe `src.location.Location`.
         return (location.lst(obstime, epoch_eq) - target_obstime.ra).to(u.hourangle) % (24 * u.hourangle)
 
-    @classmethod
-    def calculate_az(cls, target, location, obstime, epoch_eq='equinoxJ2000'):
+    def calculate_az(self, target, location, obstime, epoch_eq='equinoxJ2000'):
         """
         Metodo di classe per il calcolo dell'azimuth del target.
         """
+        location = self.location
+        
         if not isinstance(target, SkyLocation):
             raise TypeError(errmsg.notTypeError.format('target', 'src.skylocation.SkyLocation'))
         if not isinstance(location, Location):
@@ -99,8 +100,8 @@ class Observation:
 
         # Viene calcolato l'angolo orario del target utilizzando il metodo di classe `Observation.calculate_ha` e la
         # distanza dallo zenith.
-        hangle = cls.calculate_ha(target, location, obstime, epoch_eq)
-        zdist = cls.calculate_zenith_dist(target, location, obstime)
+        hangle = self.calculate_ha(target, location, obstime, epoch_eq)
+        zdist = self.calculate_zenith_dist(target, location, obstime)
 
         # Prima viene ridefinito l'angolo orario come positivo se ad ovest del Sud e negativo altrimenti, poi viene
         # effettuato lo stesso calcolo, cioè, dopo le seguenti definizioni:
@@ -154,11 +155,12 @@ class Observation:
 
             return Angle(360 * u.deg - np.arccos(-cos_az).to(u.deg))
 
-    @classmethod
-    def calculate_alt(cls, target, location, obstime):
+    def calculate_alt(self, target, location, obstime):
         """
         Metodo di classe che calcola l'altezza sull'orizzonte del target.
         """
+        location = self.location
+        
         if not isinstance(target, SkyLocation):
             raise TypeError(errmsg.notTypeError.format('target', 'src.skylocation.SkyLocation'))
         if not isinstance(location, Location):
@@ -182,8 +184,7 @@ class Observation:
         else:
             return Angle((90 - np.rad2deg(np.arccos(ps))) % -90 * u.deg)
 
-    @classmethod
-    def estimate_quality(cls, target, location, obstime, sun,
+    def estimate_quality(self, target, location, obstime, sun,
                          parameter=1.5, interval=2*u.hour, par_type='airmass'):
         """
         Metodo che stima la durata della permanenza di un oggetto al di sopra di una certa altezza dall'orizzonte, entro
@@ -191,6 +192,11 @@ class Observation:
         minima per un tempo superiore ad un intervallo indicato dall'utente, fissato di default a 2h.
         """
         # https://www.weather.gov/fsd/twilight for twilight definitions
+        
+        location = self.location
+        sun = self.sun
+        sun.at_date(obstime)
+        
         if not isinstance(target, SkyLocation):
             raise TypeError(errmsg.notTypeError.format('target', 'src.skylocation.SkyLocation'))
         if not isinstance(location, Location):
@@ -231,7 +237,7 @@ class Observation:
         # Con il metodo di classe opportuno, viene calcolata la distanza dallo zenith alla culminazione, anche questa
         # ottenuta da uno specifico metodo di classe. Se la distanza alla culminazione è maggiore della distanza minima
         # accettata, il metodo restituisce `False` e `0h`, cioè il tempo di permanenza sopra l'altezza minima.
-        if cls.calculate_zenith_dist(target, location, cls.calculate_culmination(target, location, obstime)) >= z_max:
+        if self.calculate_zenith_dist(target, location, self.calculate_culmination(target, location, obstime)) >= z_max:
             return False, 0*u.hour
 
         # Con una metodologia analoga a quella utilizzata (e spiegata) più avanti per il calcolo della visibilità, si
@@ -269,11 +275,12 @@ class Observation:
 
             return (time_above >= interval), time_above
 
-    @classmethod
-    def calculate_zenith_dist(cls, target, location, obstime):
+    def calculate_zenith_dist(self, target, location, obstime):
         """
         Metodo di classe che calcola la distanza zenitale del target.
         """
+        location = self.location
+        
         if not isinstance(target, SkyLocation):
             raise TypeError(errmsg.notTypeError.format('target', 'src.skylocation.SkyLocation'))
         if not isinstance(location, Location):
@@ -283,16 +290,17 @@ class Observation:
 
         warnings.warn("`location` parameter will be removed in a future version, using the internal instance of "
                       "`Location` class.", DeprecationWarning)
-        alt = cls.calculate_alt(target, location, obstime)
+        alt = self.calculate_alt(target, location, obstime)
 
         # Dopo aver calcolato l'altezza sull'orizzonte con il metodi di classe adatto, viene calcolata z come 90° - alt.
         return 90 * u.deg - alt
 
-    @classmethod
-    def calculate_airmass(cls, target, location, obstime):
+    def calculate_airmass(self, target, location, obstime):
         """
         Metodo di classe per il calcolo dell'airmass.
         """
+        location = self.location
+        
         if not isinstance(target, SkyLocation):
             raise TypeError(errmsg.notTypeError.format('target', 'src.skylocation.SkyLocation'))
         if not isinstance(location, Location):
@@ -314,11 +322,12 @@ class Observation:
         else:
             return 0
 
-    @classmethod
-    def calculate_culmination(cls, target, location, obstime):
+    def calculate_culmination(self, target, location, obstime):
         """
         Calcolo della culminazione del target, alla data.
         """
+        location = self.location
+        
         if not isinstance(target, SkyLocation):
             raise TypeError(errmsg.notTypeError.format('target', 'src.skylocation.SkyLocation'))
         if not isinstance(location, Location):
@@ -358,18 +367,19 @@ class Observation:
 
             culm = obstime_midday + delta_time
 
-            if cls.calculate_alt(target, location, culm) < 0:
+            if self.calculate_alt(target, location, culm) < 0:
                 culm += 0.5 * Tsidday
             if culm.jd <= obstime.jd:
                 culm += Tsidday
 
             return culm
 
-    @classmethod
-    def calculate_set_time(cls, target, location, obstime):
+    def calculate_set_time(self, target, location, obstime):
         """
         Metodo di classe per il calcolo dell'orario di tramonto del target alla data.
         """
+        location = self.location
+        
         if not isinstance(target, SkyLocation):
             raise TypeError(errmsg.notTypeError.format('target', 'src.skylocation.SkyLocation'))
         if not isinstance(location, Location):
@@ -389,15 +399,16 @@ class Observation:
 
         # Viene calcolato l'orario di culminazione dal metodo di classe apposito e viene aggiunto metà del periodo di
         # visibilità sopra l'orizzonte, per il target, anche questo calcolato con il metodo di classe apposito.
-        culm_t = cls.calculate_culmination(target, location, obstime)
-        visibility_window = cls.calculate_visibility(target, location, obstime)
+        culm_t = self.calculate_culmination(target, location, obstime)
+        visibility_window = self.calculate_visibility(target, location, obstime)
         return culm_t + visibility_window / 2
 
-    @classmethod
-    def calculate_rise_time(cls, target, location, obstime):
+    def calculate_rise_time(self, target, location, obstime):
         """
         Metodo di classe per il calcolo dell'orario dell'alba del target alla data.
         """
+        location = self.location
+        
         if not isinstance(target, SkyLocation):
             raise TypeError(errmsg.notTypeError.format('target', 'src.skylocation.SkyLocation'))
         if not isinstance(location, Location):
@@ -417,16 +428,19 @@ class Observation:
 
         # Viene calcolato l'orario di culminazione dal metodo di classe apposito e viene sottratto metà del periodo di
         # visibilità sopra l'orizzonte, per il target, anche questo calcolato con il metodo di classe apposito.
-        culm_t = cls.calculate_culmination(target, location, obstime)
-        visibility_window = cls.calculate_visibility(target, location, obstime)
+        culm_t = self.calculate_culmination(target, location, obstime)
+        visibility_window = self.calculate_visibility(target, location, obstime)
         return culm_t - visibility_window / 2
 
-    @classmethod
-    def calculate_twilight(cls, sun, location, obstime, twilight='nautical'):
+    def calculate_twilight(self, sun, location, obstime, twilight='nautical'):
         """
         Metodo di classe per il calcolo di inizio e fine del crepuscolo navale ed astronomico. Dati sulle altezze di
         definizione dei due crepuscoli ricavati da `https://www.weather.gov/fsd/twilight`
         """
+        location = self.location
+        sun = self.sun
+        sun.at_date(obstime)
+        
         if not isinstance(sun, SkyLocation):
             raise TypeError(errmsg.notTypeError.format('sun', 'src.skylocation.sun.Sun'))
         if not isinstance(location, Location):
@@ -462,7 +476,7 @@ class Observation:
 
         # In maniera analoga a quanto calcolate nei metodi `calculate_set_time` e `calculate_rise_time`, viene stimato
         # l'orario della culminazione del Sole alla data.
-        sun_culm = cls.calculate_culmination(sun, location, obstime)
+        sun_culm = self.calculate_culmination(sun, location, obstime)
 
         # Per migliorare la precisione, si reimposta l'orario con quello di culminazione.
         sun_obstime = sun.observe_at_date(sun_culm)
@@ -477,11 +491,12 @@ class Observation:
         # Viene restituita la culminazione alla data, il tempo dell'inizio del prossimo crepuscolo e la sua fine.
         return sun_culm, sun_culm + half_over_alt_time, sun_culm + Tsidday - half_over_alt_time
 
-    @classmethod
-    def calculate_visibility(cls, target, location, obstime):
+    def calculate_visibility(self, target, location, obstime):
         """
         Metodo che stima la durata della permanenza di un oggetto al di sopra dell'orizzonte.
         """
+        location = self.location
+        
         if not isinstance(target, SkyLocation):
             raise TypeError(errmsg.notTypeError.format('target', 'src.skylocation.SkyLocation'))
         if not isinstance(location, Location):
@@ -528,11 +543,12 @@ class Observation:
             sidday_factor = Tsidday.to(u.hour) / (2 * np.pi * u.rad)
             return 2 * sidday_factor * np.arccos(- np.tan(target_obstime.dec.rad) * np.tan(location.lat))
 
-    @classmethod
-    def calculate_best_day(cls, target, location, obstime):
+    def calculate_best_day(self, target, location, obstime):
         """
         Metodo di classe per il calcolo del miglior periodo dell'anno per l'osservazione di un target.
         """
+        location = self.location
+
         if not isinstance(target, SkyLocation):
             raise TypeError(errmsg.notTypeError.format('target', 'src.skylocation.SkyLocation'))
         if not isinstance(location, Location):
@@ -557,22 +573,22 @@ class Observation:
         # 50"). Corretta la data, viene calcolato il momento esatto della culminazione del target alla data, con il
         # metodo di classe descritto prima.
         else:
-            sun = Sun(obstime)
+            self.sun.at_date(obstime)
 
             factor_sidyear = Tsidyear / (360 * u.deg)
 
             if sun.ra >= target_obstime.ra:
-                if (delta_phi := sun.ra - target_obstime.ra) <= 180 * u.deg:
+                if (delta_phi := self.sun.ra - target_obstime.ra) <= 180 * u.deg:
                     delta_time = factor_sidyear * (180 * u.deg - delta_phi)
                 else:
                     delta_time = factor_sidyear * (540 * u.deg - delta_phi)
             else:
-                if (delta_phi := target_obstime.ra - sun.ra) <= 180 * u.deg:
+                if (delta_phi := target_obstime.ra - self.sun.ra) <= 180 * u.deg:
                     delta_time = factor_sidyear * (180 * u.deg + delta_phi)
                 else:
                     delta_time = factor_sidyear * (delta_phi - 180 * u.deg)
 
-            sun_besttime = sun.observe_at_date(obstime + delta_time)
+            sun_besttime = self.sun.observe_at_date(obstime + delta_time)
             target_besttime = target.observe_at_date(obstime + delta_time)
 
             if sun_besttime.ra >= target_besttime.ra:
@@ -582,7 +598,7 @@ class Observation:
                 delta_phi = target_besttime.ra - sun_besttime.ra
                 delta_time_1 = factor_sidyear * (delta_phi - 180 * u.deg)
 
-            return cls.calculate_culmination(target, location, obstime + delta_time + delta_time_1)
+            return self.calculate_culmination(target, location, obstime + delta_time + delta_time_1)
 
     def plot_altaz(self, target, location, obstime, sun, moon, interval=15*u.min):
         warnings.warn("`location` parameter will be removed in a future version, using the internal instance of "
@@ -591,6 +607,8 @@ class Observation:
                       "instances of `Sun` and `Moon` classes.",
                       DeprecationWarning)
 
+        location = self.location
+
         step_mjd = interval / (1 * u.d).to(interval.unit)
 
         # If obstime is before the day's sunrise, code would calculate data for the upcoming sunset. This allows the
@@ -598,10 +616,10 @@ class Observation:
         if obstime < self.calculate_rise_time(self.sun, location, Time(int(obstime.mjd), format='mjd')):
             obstime -= 1 * u.day
 
-        sunset = self.calculate_set_time(sun, location, obstime)
+        sunset = self.calculate_set_time(self.sun, location, obstime)
         if int(sunset.mjd) > int(obstime.mjd):
-            sunset = self.calculate_set_time(sun, location, obstime - 1 * u.day)
-        sunrise = self.calculate_rise_time(sun, location, sunset)
+            sunset = self.calculate_set_time(self.sun, location, obstime - 1 * u.day)
+        sunrise = self.calculate_rise_time(self.sun, location, sunset)
 
         time_limits = [self.__find_edge_time(sunset - interval, 'lower'),
                        self.__find_edge_time(sunrise + interval, 'upper')]
@@ -612,12 +630,12 @@ class Observation:
         alt = [self.calculate_alt(target, location, t) for t in times] * u.deg
         az = [self.calculate_az(target, location, t) for t in times] * u.deg
 
-        alt_moon = [self.calculate_alt(moon, location, t) for t in times] * u.deg
-        az_moon = [self.calculate_az(moon, location, t) for t in times] * u.deg
-        phase_moon = [moon.calculate_moon_phase(self.sun, t) for t in times]  #
+        alt_moon = [self.calculate_alt(self.moon, location, t) for t in times] * u.deg
+        az_moon = [self.calculate_az(self.moon, location, t) for t in times] * u.deg
+        phase_moon = [self.moon.calculate_moon_phase(self.sun, t) for t in times]  #
 
-        sun_naut_twilights_0 = self.calculate_twilight(sun, location, obstime, twilight='nautical')[1:]
-        sun_astr_twilights_0 = self.calculate_twilight(sun, location, obstime, twilight='astronomical')[1:]
+        sun_naut_twilights_0 = self.calculate_twilight(self.sun, location, obstime, twilight='nautical')[1:]
+        sun_astr_twilights_0 = self.calculate_twilight(self.sun, location, obstime, twilight='astronomical')[1:]
 
         fig = plt.figure(figsize=(8, 8))
         fig.suptitle(target.name + " between {} and {}".format(obstime.iso[:-13], times[-1].iso[:-13]))
