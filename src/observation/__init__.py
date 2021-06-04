@@ -32,7 +32,7 @@ quantity_support()
 class Observation:
     equinoxes = {'equinoxJ2000': Equinox2000}
 
-    def __init__(self, location, obstime=None, target=None):
+    def __init__(self, location, obstime=None):
         """
         Classe che, data una località, una data di osservazione ed un target, è in grado di effettuare una serie di
         calcoli relativi all'osservazione del target, come la posizione in coordinate Alt-Az, i tempi di alba, tramonto
@@ -44,79 +44,11 @@ class Observation:
             raise TypeError(errmsg.notTypeError.format('location', 'src.location.Location'))
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
-        if not isinstance(target, SkyLocation):
-            raise TypeError(errmsg.notTypeError.format('target', 'src.skylocation.SkyLocation'))
-
-        warnings.warn("The following attributes will be deleted in a future version. Update their use by calling the "
-                      "related class method:\n"
-                      "\t`target`, `ha`, `az`, `alt`, `zenith_dist`, `airmass`, `culmination`, `visibility`, "
-                      "`rise_time`, `rise_azimuth`, `rise_ha`, `set_time`, `set_azimuth`, `set_ha`.",
-                      DeprecationWarning)
 
         self.location = location
         self.obstime = obstime
-        self.target = target
         self.sun = Sun(self.obstime)
         self.moon = Moon(self.obstime)
-
-        self.ha = None
-        self.az = None
-
-        self.alt = None
-        self.zenith_dist = None
-        self.airmass = None
-
-        self.culmination = None
-        self.visibility = None
-
-        self.rise_time = None
-        self.rise_azimuth = None
-        self.rise_ha = None
-
-        self.set_time = None
-        self.set_azimuth = None
-        self.set_ha = None
-
-        # self.make_observation(self.obstime)
-
-    def make_observation(self, obstime):
-        """
-        Metodo che 'effettua' l'osservazione ad una determinata data, calcolando i parametri rilevanti del target.
-        """
-        if not isinstance(obstime, Time):
-            raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
-        warnings.warn("This method and some of the attributes it defines will be deleted in a future version.",
-                      DeprecationWarning)
-
-        self.obstime = obstime
-
-        # Viene calcolato l'effetto della precessione al target, la posizione dello zenith alla data e le posizioni di
-        # Sole e Luna, con i metodi definiti nei rispettivi moduli.
-        self.target.at_date(self.obstime)
-        self.location.zenith_at_date(self.obstime, copy=False)
-        self.sun.at_date(self.obstime)
-        self.moon.at_date(self.obstime)
-
-        # Vengono calcolati angolo orario e azimuth del target.
-        self.ha = self.calculate_ha(self.target, self.location, self.obstime)
-        self.az = self.calculate_az(self.target, self.location, self.obstime)
-
-        # Vengono calcolati altezza, distanza zenitale e airmass del target.
-        self.alt = self.calculate_alt(self.target, self.location, self.obstime)
-        self.zenith_dist = self.calculate_zenith_dist(self.target, self.location, self.obstime)
-        self.airmass = self.calculate_airmass(self.target, self.location, self.obstime)
-
-        # Vengono calcolati i tempi di culminazione, di alba e tramonto del target.
-        self.culmination = self.calculate_culmination(self.target, self.location, self.obstime)
-        self.set_time = self.calculate_set_time(self.target, self.location, self.obstime)
-        self.rise_time = self.calculate_rise_time(self.target, self.location, self.obstime)
-
-        # Viene calcolata la permanenza del target sopra l'orizzonte.
-        self.visibility = self.calculate_visibility(self.target, self.location, self.obstime)
-
-        # Vengono calcolati gli azimuth di alba e tramonto del target.
-        self.rise_azimuth = self.calculate_az(self.target, self.location, self.rise_time)
-        self.set_azimuth = self.calculate_az(self.target, self.location, self.set_time)
 
     @classmethod
     def calculate_ha(cls, target, location, obstime, epoch_eq='equinoxJ2000'):
