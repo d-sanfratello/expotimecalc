@@ -15,23 +15,9 @@ from skyfield import almanac
 
 from .time import Time
 
+from . import constants as ct
 from . import warnmsg
 from . import errmsg
-
-
-Tsidday = (23.93447192 * u.hour).to(u.day)  # Expl. Suppl. p698 (Sidereal year in 1990)
-Tsidyear = 365.256363004 * u.day  # https://hpiers.obspm.fr/eop-pc/models/constants.html
-Jyear = 365.25 * u.day
-
-# DOI:10.1016/j.pss.2006.06.003 and DOI:10.1051/0004-6361:20021912
-Tprec = ((1/(50287.9226200 * u.arcsec / (1000 * u.year))).to(u.year/u.deg) * 360 * u.deg).to(u.day)
-
-Omegasidmoon = (2.661699489e-6 * u.rad / u.s).to(u.rad / u.d)  # Expl. Suppl. p701 (Revolution frequency of Moon)
-
-moon_incl_to_ecliptic = 5.145396 * u.deg  # Expl. Suppl. p701
-
-tJ2000 = Time('J2000.0')
-sidday_diff = 1 * u.day - Tsidday
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
@@ -40,6 +26,7 @@ ch.setLevel(logger.getEffectiveLevel())
 formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(name)s.%(funcName)s:%(lineno)d - %(message)s')
 ch.setFormatter(formatter)
 logger.addHandler(ch)
+
 
 def hms2deg(hms):
     """
