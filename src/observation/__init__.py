@@ -9,7 +9,6 @@ from astropy.units.quantity import Quantity
 from astropy.visualization import time_support
 from astropy.visualization import quantity_support
 from matplotlib.colors import Normalize
-from matplotlib.lines import Line2D
 
 from ..location import Location
 from ..skylocation import SkyLocation
@@ -19,8 +18,6 @@ from ..time import Time
 
 from .. import Tsidday
 from .. import Tsidyear
-from .. import Jyear
-from .. import Tprec
 from .. import Equinox2000
 
 from .. import errmsg
@@ -49,6 +46,12 @@ class Observation:
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
         if not isinstance(target, SkyLocation):
             raise TypeError(errmsg.notTypeError.format('target', 'src.skylocation.SkyLocation'))
+
+        warnings.warn("The following attributes will be deleted in a future version. Update their use by calling the "
+                      "related class method:\n"
+                      "\t`target`, `ha`, `az`, `alt`, `zenith_dist`, `airmass`, `culmination`, `visibility`, "
+                      "`rise_time`, `rise_azimuth`, `rise_ha`, `set_time`, `set_azimuth`, `set_ha`.",
+                      DeprecationWarning)
 
         self.location = location
         self.obstime = obstime
@@ -82,6 +85,8 @@ class Observation:
         """
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
+        warnings.warn("This method and some of the attributes it defines will be deleted in a future version.",
+                      DeprecationWarning)
 
         self.obstime = obstime
 
@@ -265,6 +270,10 @@ class Observation:
             raise ValueError(errmsg.altZError)
         elif isinstance(parameter, int) and par_type not in ['airmass']:
             raise ValueError(errmsg.airmassError)
+
+        warnings.warn("`sun` parameter will be removed in a future version, by using the internal instance of `Sun` "
+                      "class.",
+                      DeprecationWarning)
 
         # I calcoli nel codice sono effettuati in distanza zenitale, per cui parametri forniti in altri modi sono
         # convertiti in z.
@@ -473,6 +482,10 @@ class Observation:
         elif twilight.lower() not in ['nautical', 'astronomical']:
             raise ValueError(errmsg.twilightError)
 
+        warnings.warn("`sun` parameter will be removed in a future version, by using the internal instance of `Sun` "
+                      "class.",
+                      DeprecationWarning)
+
         if twilight.lower() == 'nautical':
             alt = -12 * u.deg
         elif twilight.lower() == 'astronomical':
@@ -607,6 +620,10 @@ class Observation:
             return cls.calculate_culmination(target, location, obstime + delta_time + delta_time_1)
 
     def plot_altaz(self, target, location, obstime, sun, moon, interval=15*u.min):
+        warnings.warn("`sun` and `moon` parameters will be removed in a future version, by using the internal "
+                      "instances of `Sun` and `Moon` classes.",
+                      DeprecationWarning)
+
         step_mjd = interval / (1 * u.d).to(interval.unit)
 
         sunset = self.calculate_set_time(sun, location, obstime)
