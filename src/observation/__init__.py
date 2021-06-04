@@ -661,6 +661,11 @@ class Observation:
 
         step_mjd = interval / (1 * u.d).to(interval.unit)
 
+        # If obstime is before the day's sunrise, code would calculate data for the upcoming sunset. This allows the
+        # correct data_night to be displayed.
+        if obstime < self.calculate_rise_time(self.sun, location, Time(int(obstime.mjd), format='mjd')):
+            obstime -= 1 * u.day
+
         sunset = self.calculate_set_time(sun, location, obstime)
         if int(sunset.mjd) > int(obstime.mjd):
             sunset = self.calculate_set_time(sun, location, obstime - 1 * u.day)
