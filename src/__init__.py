@@ -5,11 +5,14 @@ import logging
 import numpy as np
 
 from astropy import units as u
+from astropy.units.quantity import Quantity
 from astropy.coordinates import Angle
 from astropy.coordinates.angles import Latitude
 from astropy.coordinates.angles import Longitude
 
 from .time import Time
+from .matrix import RotationMatrix
+from .matrix import Rx, Ry, Rz
 
 from . import warnmsg
 from . import errmsg
@@ -94,7 +97,7 @@ class Versor:
             raise ValueError(errmsg.versorError)
 
         if vector is None:
-            if not isinstance(ra, u.quantity.Quantity) and not isinstance(dec, u.quantity.Quantity):
+            if not isinstance(ra, Quantity) and not isinstance(dec, Quantity):
                 if unit is None:
                     self.__logger.critical('Error!')
                     raise ValueError(errmsg.specifyUnitError)
@@ -162,8 +165,7 @@ class Versor:
                 self.ra = 0 * u.deg
                 self.dec = 0 * u.deg
 
-
-        if isinstance(self.ra, u.Quantity):
+        if isinstance(self.ra, Quantity):
             self.ra = self.ra.to(u.deg)
             self.ra = Longitude(self.ra)
         else:
@@ -181,7 +183,18 @@ class Versor:
         angolo `angle` e, nel caso in cui `copy=True`, restituisce una copia del versore, altrimenti salva le modifiche
         nell'oggetto a cui tal modifica è stata applicata.
         """
-        r_mat = RotationMatrix(axis, angle, unit)
+        if axis == 'x':
+            r_mat = Rx
+        elif axis == 'y':
+            r_mat = Ry
+        elif axis == 'z':
+            r_mat = Rz
+        else:
+            raise ValueError(errmsg.invalidAxisError)
+
+        r_mat.unit = unit
+        r_mat.angle = angle
+
         vsr = r_mat.mat.dot(self.vsr)
 
         vsr /= np.sqrt((vsr**2).sum())
@@ -199,7 +212,18 @@ class Versor:
         di un angolo `angle` e, nel caso in cui `copy=True`, restituisce una copia del versore, altrimenti salva le
         modifiche nell'oggetto a cui tal modifica è stata applicata.
         """
-        r_mat = RotationMatrix(axis, angle, unit)
+        if axis == 'x':
+            r_mat = Rx
+        elif axis == 'y':
+            r_mat = Ry
+        elif axis == 'z':
+            r_mat = Rz
+        else:
+            raise ValueError(errmsg.invalidAxisError)
+
+        r_mat.unit = unit
+        r_mat.angle = angle
+
         vsr = r_mat.inv.dot(self.vsr)
 
         vsr /= np.sqrt((vsr**2).sum())
@@ -224,60 +248,8 @@ class Versor:
         return Versor(vector=self.vsr * self.radius - sub_vcr.vsr * sub_vcr.radius)
 
 
-class RotationMatrix:
-    def __init__(self, axis, angle, unit='deg'):
-        """
-        Classe che definisce una matrice di rotazione di angolo `angle` intorno all'asse `axis`, che deve essere uno dei
-        tre assi coordinati.
-        """
-        if axis.lower() not in ['x', 'y', 'z']:
-            raise ValueError(errmsg.invalidAxisError)
-        if unit not in ['deg', 'rad'] and\
-                (not isinstance(angle, u.quantity.Quantity) and angle.unit not in ['deg', 'rad']):
-            raise ValueError(errmsg.invalidUnitError)
-
-        if isinstance(angle, u.quantity.Quantity):
-            unit = angle.unit
-        else:
-            if unit == 'deg':
-                angle *= u.deg
-            elif unit == 'rad':
-                angle *= u.rad
-
-        self.axis = axis
-        self.angle = angle
-        self.unit = unit
-
-        angle = self.angle.to(u.rad)
-
-        self.mat = self.matrix(axis, angle)
-        self.inv = self.matrix(axis, -angle)
-
-    @staticmethod
-    def matrix(axis, angle):
-        """
-        Metodo statico che definisce esplicitamente la matrice di rotazione, dato l'asse `axis`.
-        """
-        if axis == 'x':
-            return np.array([[1,             0,              0],
-                             [0, np.cos(angle), -np.sin(angle)],
-                             [0, np.sin(angle),  np.cos(angle)]], dtype=np.float64)
-        elif axis == 'y':
-            return np.array([[ np.cos(angle), 0, np.sin(angle)],
-                             [             0, 1,             0],
-                             [-np.sin(angle), 0, np.cos(angle)]], dtype=np.float64)
-        elif axis == 'z':
-            return np.array([[np.cos(angle), -np.sin(angle), 0],
-                             [np.sin(angle),  np.cos(angle), 0],
-                             [             0,             0, 1]], dtype=np.float64)
-        else:
-            raise ValueError(errmsg.invalidAxisError)
-
-
 from . import constants
 from . import location
 from . import observation
 from . import time
 from . import skylocation
-from . import errmsg
-from . import warnmsg
