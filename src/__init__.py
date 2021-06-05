@@ -5,17 +5,12 @@ import logging
 import numpy as np
 
 from astropy import units as u
-from astropy.coordinates import EarthLocation
 from astropy.coordinates import Angle
 from astropy.coordinates.angles import Latitude
 from astropy.coordinates.angles import Longitude
 
-from skyfield import api
-from skyfield import almanac
-
 from .time import Time
 
-from . import constants
 from . import warnmsg
 from . import errmsg
 
@@ -84,59 +79,6 @@ def open_loc_file(obs_path, tgt_path):
         tgt = f.readlines()
 
     return loc, obstime, tgt
-
-
-class GMSTeq2000:
-    def __init__(self, obstime):
-        """
-        Classe che identifica il Greenwich Mean Sidereal Time all'equinozio vernale del 2000.
-        """
-        if not isinstance(obstime, Time):
-            raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
-
-        self.hms = self.__set_time(obstime)
-        self.deg = self.hms.to(u.deg)
-        self.rad = self.hms.to(u.rad)
-
-    @staticmethod
-    def __set_time(obstime):
-        if not isinstance(obstime, Time):
-            raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
-
-        obstime.location = EarthLocation.of_site('greenwich')
-        return obstime.sidereal_time('mean')
-
-
-class Equinox2000:
-    """
-    Costante che definisce l'equinozio vernale del 2000, calcolandolo dalle effemeridi de421.
-    """
-    ts = api.load.timescale()
-    eph = api.load('de421.bsp')
-    t0 = ts.utc(2000, 3, 20)
-    t1 = ts.utc(2000, 3, 21)
-    t = almanac.find_discrete(t0, t1, almanac.seasons(eph))[0]
-    eph.close()
-
-    time = Time(t.utc_iso()[0][:-1], scale='utc')
-
-    GMST = GMSTeq2000(time)
-    hour = time.jd % 1
-    rad = 2 * np.pi * hour
-
-
-class Eclipse1999:
-    """
-    Costante che definisce l'eclissi di sole dell'agosto 1999, calcolandolo dalle effemeridi de421.
-    """
-    ts = api.load.timescale()
-    eph = api.load('de421.bsp')
-    t0 = ts.utc(1999, 8, 1)
-    t1 = ts.utc(1999, 8, 15)
-    t = almanac.find_discrete(t0, t1, almanac.moon_nodes(eph))[0]
-    eph.close()
-
-    time = Time(t.utc_iso()[0][:-1], scale='utc')
 
 
 class Versor:
@@ -332,6 +274,7 @@ class RotationMatrix:
             raise ValueError(errmsg.invalidAxisError)
 
 
+from . import constants
 from . import location
 from . import observation
 from . import time

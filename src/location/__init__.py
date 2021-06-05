@@ -9,7 +9,7 @@ from ..time import Time
 from .. import Versor
 
 from .. import dms2deg
-from .. import Equinox2000
+from ..constants import Equinox2000
 from ..constants import Tsidday
 
 from .. import errmsg

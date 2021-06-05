@@ -7,7 +7,7 @@ from ..time import Time
 from ..skylocation import SkyLocation
 
 from ..constants import Tsidyear
-from .. import Equinox2000
+from ..constants import Equinox2000
 
 from .. import errmsg
 
