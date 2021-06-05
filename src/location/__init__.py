@@ -169,8 +169,8 @@ class Location:
             # Se si indica di NON volere una copia dei vettori, invece, il vettore ruotato viene assegnato
             # all'attributo corrispondente.
             self.zenith_obstime = self.zenithJ2000.rotate('z', self.sidereal_day_rotation(obstime), copy=True)
-            self.north = self.north.rotate('z', self.sidereal_day_rotation(self.obstime), copy=True)
-            self.east = self.east.rotate('z', self.sidereal_day_rotation(self.obstime), copy=True)
+            self.north.rotate('z', self.sidereal_day_rotation(self.obstime), copy=False)
+            self.east.rotate('z', self.sidereal_day_rotation(self.obstime), copy=False)
 
     def sidereal_day_rotation(self, obstime, epoch_eq='equinoxJ2000'):
         """
@@ -210,7 +210,7 @@ class Location:
         #
         #       deltaLST = GMST(at equinox date) + LST(at date) + longitude.
         #
-        shift = reference.GMST.deg + self.sidereal_day_rotation(obstime).to(u.deg) + self.lon
+        shift = reference.gmst.deg + self.sidereal_day_rotation(obstime).to(u.deg) + self.lon
         return shift.to(u.hourangle) % (24 * u.hourangle)
 
     def __str__(self):
