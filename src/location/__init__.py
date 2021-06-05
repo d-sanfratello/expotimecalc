@@ -16,6 +16,7 @@ from .. import errmsg
 from .. import logger
 
 
+# noinspection PyTypeChecker
 class Location:
     valid_coord_types = (int, float, str, Latitude, Longitude, Quantity)
     equinoxes = {'equinoxJ2000': Equinox2000}
@@ -122,15 +123,11 @@ class Location:
             else:
                 self.timezone = timezone * u.hour
 
-            self.zenithJ2000 = Versor(ra=self.lst(Equinox2000.time).rad,
-                                      dec=self.lat.rad,
-                                      unit='rad')
+            self.zenithJ2000 = Versor(ra=self.lst(Equinox2000.time).rad, dec=self.lat.rad, unit='rad')
 
             self.zenith_obstime = None
-            self.north = Versor(ra=180 * u.deg + self.lst(Equinox2000.time),
-                                dec=90 * u.deg - self.lat)
-            self.east = Versor(ra=90 * u.deg + self.lst(Equinox2000.time),
-                               dec=0 * u.deg)
+            self.north = Versor(ra=180 * u.deg + self.lst(Equinox2000.time), dec=90 * u.deg - self.lat)
+            self.east = Versor(ra=90 * u.deg + self.lst(Equinox2000.time), dec=0 * u.deg)
 
             self.zenith_at_date(self.obstime, copy=False)
         else:
