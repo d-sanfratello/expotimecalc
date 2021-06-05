@@ -1,7 +1,16 @@
+import numpy as np
+import warnings
+
 from astropy import units as u
 from astropy.constants import Constant
+from astropy.coordinates import EarthLocation
+
+from skyfield import api
+from skyfield import almanac
 
 from .time import Time
+
+from . import errmsg
 
 
 Tsidday = Constant(abbrev='T_sidday',
@@ -54,3 +63,100 @@ sidday_diff = Constant(abbrev='sidday_diff',
                        unit='day',
                        uncertainty=0,
                        reference='')
+
+
+class GMSTeq2000:
+    def __init__(self, obstime):
+        """
+        Classe che identifica il Greenwich Mean Sidereal Time all'equinozio vernale del 2000.
+        """
+        if not isinstance(obstime, Time):
+            raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
+
+        self.__obstime = obstime
+        self.hms = self.time
+        self.deg = self.hms.to(u.deg)
+        self.rad = self.hms.to(u.rad)
+
+    @property
+    def time(self):
+        self.__obstime.location = EarthLocation.of_site('greenwich')
+        return self.__obstime.sidereal_time('mean')
+
+
+class Equinox2000:
+    """
+    Costante che definisce l'equinozio vernale del 2000, calcolandolo dalle effemeridi de421.
+    """
+    def __init__(self):
+        ts = api.load.timescale()
+        eph = api.load('de421.bsp')
+        t0 = ts.utc(2000, 3, 20)
+        t1 = ts.utc(2000, 3, 21)
+        t = almanac.find_discrete(t0, t1, almanac.seasons(eph))[0]
+        eph.close()
+
+        self.__time = Time(t.utc_iso()[0][:-1], scale='utc')
+        self.__gmst = GMSTeq2000(self.__time)
+
+    @property
+    def time(self):
+        return self.__time
+
+    @property
+    def GMST(self):
+        warnings.warn("Capital property is deprecated and will be removed. Please use `gmst`.", DeprecationWarning)
+        return self.__gmst
+
+    @property
+    def gmst(self):
+        return self.__gmst
+
+    @property
+    def hour(self):
+        return self.__time.jd % 1
+
+    @property
+    def rad(self):
+        return 2 * np.pi * self.hour * u.rad
+
+
+class Eclipse1999:
+    """
+    Costante che definisce l'eclissi di sole dell'agosto 1999, calcolandolo dalle effemeridi de421.
+    """
+    def __init__(self):
+        ts = api.load.timescale()
+        eph = api.load('de421.bsp')
+        t0 = ts.utc(1999, 8, 1)
+        t1 = ts.utc(1999, 8, 15)
+        t = almanac.find_discrete(t0, t1, almanac.moon_nodes(eph))[0]
+        eph.close()
+
+        self.__time = Time(t.utc_iso()[0][:-1], scale='utc')
+        self.__gmst = GMSTeq2000(self.__time)
+
+    @property
+    def time(self):
+        return self.__time
+
+    @property
+    def GMST(self):
+        warnings.warn("Capital property is deprecated and will be removed. Please use `gmst`.", DeprecationWarning)
+        return self.__gmst
+
+    @property
+    def gmst(self):
+        return self.__gmst
+
+    @property
+    def hour(self):
+        return self.__time.jd % 1
+
+    @property
+    def rad(self):
+        return 2 * np.pi * self.hour * u.rad
+
+
+Equinox2000 = Equinox2000()
+Eclipse1999 = Eclipse1999()
