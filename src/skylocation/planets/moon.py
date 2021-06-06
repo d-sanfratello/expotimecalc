@@ -42,7 +42,7 @@ class Moon(SkyLocation):
         super(Moon, self).__init__(locstring=None,
                                    ra=self.vector_obstime.ra, dec=self.vector_obstime.dec,
                                    distance=self.distance_from_earth, obstime=obstime,
-                                   ra_unit='deg', dec_unit='dms', epoch='J2000', name='Moon')
+                                   ra_unit='deg', dec_unit='deg', epoch='J2000', name='Moon')
 
     def observe_at_date(self, obstime):
         """

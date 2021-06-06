@@ -200,3 +200,4 @@ from .earth import Earth
 from .moon import Moon
 from .mars import Mars
 from .jupiter import Jupiter
+from .sun import Sun
