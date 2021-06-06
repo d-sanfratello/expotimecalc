@@ -9,18 +9,15 @@ from astropy.units.quantity import Quantity
 from astropy.visualization import time_support
 from astropy.visualization import quantity_support
 from matplotlib.colors import Normalize
-from matplotlib.lines import Line2D
 
 from ..location import Location
 from ..skylocation import SkyLocation
-from ..skylocation.sun import Sun
-from ..skylocation.moon import Moon
+from ..skylocation.planets.sun import Sun
+from ..skylocation.planets.moon import Moon
 from ..time import Time
 
 from .. import Tsidday
 from .. import Tsidyear
-from .. import Jyear
-from .. import Tprec
 from .. import Equinox2000
 
 from .. import errmsg
@@ -49,6 +46,12 @@ class Observation:
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
         if not isinstance(target, SkyLocation):
             raise TypeError(errmsg.notTypeError.format('target', 'src.skylocation.SkyLocation'))
+
+        warnings.warn("The following attributes will be deleted in a future version. Update their use by calling the "
+                      "related class method:\n"
+                      "\t`target`, `ha`, `az`, `alt`, `zenith_dist`, `airmass`, `culmination`, `visibility`, "
+                      "`rise_time`, `rise_azimuth`, `rise_ha`, `set_time`, `set_azimuth`, `set_ha`.",
+                      DeprecationWarning)
 
         self.location = location
         self.obstime = obstime
@@ -82,6 +85,8 @@ class Observation:
         """
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
+        warnings.warn("This method and some of the attributes it defines will be deleted in a future version.",
+                      DeprecationWarning)
 
         self.obstime = obstime
 
@@ -127,6 +132,9 @@ class Observation:
         if epoch_eq != 'equinoxJ2000':
             raise NotImplementedError(errmsg.epochNotImplemented)
 
+        warnings.warn("`location` parameter will be removed in a future version, using the internal instance of "
+                      "`Location` class.", DeprecationWarning)
+
         # Viene calcolata la posizione del target alla data di osservazione
         target_obstime = target.observe_at_date(obstime)
 
@@ -150,6 +158,9 @@ class Observation:
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
         if epoch_eq != 'equinoxJ2000':
             raise NotImplementedError(errmsg.epochNotImplemented)
+
+        warnings.warn("`location` parameter will be removed in a future version, using the internal instance of "
+                      "`Location` class.", DeprecationWarning)
 
         # Viene calcolata la posizione del target alla data di osservazione
         target_obstime = target.observe_at_date(obstime)
@@ -223,6 +234,9 @@ class Observation:
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
 
+        warnings.warn("`location` parameter will be removed in a future version, using the internal instance of "
+                      "`Location` class.", DeprecationWarning)
+
         # Vengono ricavati i versori che indicano la posizione in cielo del target e dello zenith alla data, chiamando
         # gli opportuni metodi.
         target_vsr = target.observe_at_date(obstime).vsr
@@ -265,6 +279,12 @@ class Observation:
             raise ValueError(errmsg.altZError)
         elif isinstance(parameter, int) and par_type not in ['airmass']:
             raise ValueError(errmsg.airmassError)
+
+        warnings.warn("`location` parameter will be removed in a future version, using the internal instance of "
+                      "`Location` class.", DeprecationWarning)
+        warnings.warn("`sun` parameter will be removed in a future version, by using the internal instance of `Sun` "
+                      "class.",
+                      DeprecationWarning)
 
         # I calcoli nel codice sono effettuati in distanza zenitale, per cui parametri forniti in altri modi sono
         # convertiti in z.
@@ -329,6 +349,8 @@ class Observation:
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
 
+        warnings.warn("`location` parameter will be removed in a future version, using the internal instance of "
+                      "`Location` class.", DeprecationWarning)
         alt = cls.calculate_alt(target, location, obstime)
 
         # Dopo aver calcolato l'altezza sull'orizzonte con il metodi di classe adatto, viene calcolata z come 90° - alt.
@@ -345,7 +367,10 @@ class Observation:
             raise TypeError(errmsg.notTypeError.format('location', 'src.location.Location'))
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
+
         warnings.warn(warnmsg.airmassWarning)
+        warnings.warn("`location` parameter will be removed in a future version, using the internal instance of "
+                      "`Location` class.", DeprecationWarning)
 
         # Calcolo dei vettori indicativi del target e dello zenith alla data.
         target_vsr = target.observe_at_date(obstime).vsr
@@ -368,6 +393,9 @@ class Observation:
             raise TypeError(errmsg.notTypeError.format('location', 'src.location.Location'))
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
+
+        warnings.warn("`location` parameter will be removed in a future version, using the internal instance of "
+                      "`Location` class.", DeprecationWarning)
 
         # Viene calcolata la posizione del target alla data.
         target_obstime = target.observe_at_date(obstime)
@@ -417,6 +445,9 @@ class Observation:
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
 
+        warnings.warn("`location` parameter will be removed in a future version, using the internal instance of "
+                      "`Location` class.", DeprecationWarning)
+
         # Viene calcolata la posizione del target alla data.
         target_obstime = target.observe_at_date(obstime)
 
@@ -441,6 +472,9 @@ class Observation:
             raise TypeError(errmsg.notTypeError.format('location', 'src.location.Location'))
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
+
+        warnings.warn("`location` parameter will be removed in a future version, using the internal instance of "
+                      "`Location` class.", DeprecationWarning)
 
         # Viene calcolata la posizione del target alla data.
         target_obstime = target.observe_at_date(obstime)
@@ -472,6 +506,12 @@ class Observation:
             raise TypeError(errmsg.notTypeError.format('twilight', 'string'))
         elif twilight.lower() not in ['nautical', 'astronomical']:
             raise ValueError(errmsg.twilightError)
+
+        warnings.warn("`location` parameter will be removed in a future version, using the internal instance of "
+                      "`Location` class.", DeprecationWarning)
+        warnings.warn("`sun` parameter will be removed in a future version, by using the internal instance of `Sun` "
+                      "class.",
+                      DeprecationWarning)
 
         if twilight.lower() == 'nautical':
             alt = -12 * u.deg
@@ -516,7 +556,10 @@ class Observation:
             raise TypeError(errmsg.notTypeError.format('location', 'src.location.Location'))
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
+
         warnings.warn(warnmsg.visibilityWarning)
+        warnings.warn("`location` parameter will be removed in a future version, using the internal instance of "
+                      "`Location` class.", DeprecationWarning)
 
         # Viene calcolata la posizione del target alla data.
         target_obstime = target.observe_at_date(obstime)
@@ -565,6 +608,9 @@ class Observation:
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
 
+        warnings.warn("`location` parameter will be removed in a future version, using the internal instance of "
+                      "`Location` class.", DeprecationWarning)
+
         # Viene calcolata la posizione del target alla data.
         target_obstime = target.observe_at_date(obstime)
 
@@ -607,6 +653,12 @@ class Observation:
             return cls.calculate_culmination(target, location, obstime + delta_time + delta_time_1)
 
     def plot_altaz(self, target, location, obstime, sun, moon, interval=15*u.min):
+        warnings.warn("`location` parameter will be removed in a future version, using the internal instance of "
+                      "`Location` class.", DeprecationWarning)
+        warnings.warn("`sun` and `moon` parameters will be removed in a future version, by using the internal "
+                      "instances of `Sun` and `Moon` classes.",
+                      DeprecationWarning)
+
         step_mjd = interval / (1 * u.d).to(interval.unit)
 
         # If obstime is before the day's sunrise, code would calculate data for the upcoming sunset. This allows the
