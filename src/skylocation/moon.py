@@ -1,4 +1,5 @@
 import numpy as np
+import warnings
 
 from astropy import units as u
 
@@ -20,6 +21,8 @@ class Moon(SkyLocation):
         """
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
+        warnings.warn("`Moon` class is deprecated and will be removed in future updates. Please use "
+                      "`skylocation.planets.moon.Moon` class for new prjects.", DeprecationWarning)
 
         # La posizione iniziale, in coordinate equatoriali, è fornita dalle Effemeridi ricavate dal sito del JPL,
         # secondo quanto riportato a seguire. L'equinozio di riferimento è quello del 2000.:
