@@ -194,5 +194,9 @@ class Planet(SkyLocation):
         return self.semimaj * (1 - self.eccentricity * np.cos(self.eccentric_anomaly))
 
 
+from .mercury import Mercury
 from .venus import Venus
 from .earth import Earth
+from .moon import Moon
+from .mars import Mars
+from .jupiter import Jupiter
