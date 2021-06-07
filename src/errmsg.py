@@ -27,6 +27,7 @@ versorError = "Must give either a set of coordinates or a ra-dec position."
 altZError = "An `Angle` quantity must be either an altitude or a zenith distance."
 airmassError = "An `int` must be an airmass."
 twilightError = "Must define the correct twilight."
+notAllDeclared = "If one argument is declared, all need to be."
 
 # Key errors
 keyError = "Unknown keyword argument."

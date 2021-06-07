@@ -37,18 +37,23 @@ class Sun(SkyLocation):
                                   distance=self.distance_from_earth, obstime=obstime,
                                   ra_unit='deg', dec_unit='deg', epoch='J2000', name='Sun')
 
-    def observe_at_date(self, obstime):
+    def observe_at_date(self, obstime, return_complete=False):
         """
         Metodo che calcola, senza salvarne il risultato, la posizione della Luna ad una specifica data.
         """
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
+        if not isinstance(return_complete, bool):
+            raise TypeError(errmsg.notTypeError.format('return_complete', 'bool'))
 
         self.__earth.at_date(obstime)
 
         vector_obstime = Versor(vector=np.zeros(3)) - self.__earth.vector_obstime
 
-        return vector_obstime
+        if return_complete:
+            return vector_obstime, None
+        else:
+            return vector_obstime
 
     def at_date(self, obstime):
         """
@@ -59,7 +64,7 @@ class Sun(SkyLocation):
 
         self.obstime = obstime
 
-        self.vector_obstime = self.observe_at_date(obstime)
+        self.vector_obstime = self.observe_at_date(obstime, return_complete=False)
         self.ra = self.vector_obstime.ra
         self.dec = self.vector_obstime.dec
 

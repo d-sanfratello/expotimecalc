@@ -44,12 +44,14 @@ class Moon(SkyLocation):
                                    distance=self.distance_from_earth, obstime=obstime,
                                    ra_unit='deg', dec_unit='deg', epoch='J2000', name='Moon')
 
-    def observe_at_date(self, obstime):
+    def observe_at_date(self, obstime, return_complete=False):
         """
         Metodo che calcola, senza salvarne il risultato, la posizione della Luna ad una specifica data.
         """
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
+        if not isinstance(return_complete, bool):
+            raise TypeError(errmsg.notTypeError.format('return_complete', 'bool'))
 
         ts = load.timescale()
         t = ts.from_astropy(obstime)
@@ -59,21 +61,37 @@ class Moon(SkyLocation):
         position = (moon - earth).at(t)
         elements = osculating_elements_of(position)
 
-        self.__semimaj = elements.semi_major_axis.to(u.m)
-        self.__ecc = elements.eccentricity
-        self.__inclination = Angle(elements.inclination.to(u.deg))
-        self.__longitude_an = Angle(elements.longitude_of_ascending_node.to(u.deg))
-        self.__argument_pericenter = Angle(elements.argument_of_periapsis.to(u.deg))
-        self.__mean_anomaly = Angle(elements.mean_anomaly.to(u.deg))
-        self.__eccentric_anomaly = self.__approx_ecc_anomaly()
+        semimaj = elements.semi_major_axis.to(u.m)
+        inclination = Angle(elements.inclination.to(u.deg))
+        argument_pericenter = Angle(elements.argument_of_periapsis.to(u.deg))
+        longitude_an = Angle(elements.longitude_of_ascending_node.to(u.deg))
+        eccentricity = elements.eccentricity
+        mean_anomaly = Angle(elements.mean_anomaly.to(u.deg))
+        eccentric_anomaly = self.__approx_ecc_anomaly(mean_anomaly=mean_anomaly, eccentricity=eccentricity)
+        true_anomaly = self.__true_anomaly(eccentric_anomaly=eccentric_anomaly, eccentricity=eccentricity)
+        distance_from_earth = self.__distance_from_center(semimaj=semimaj,
+                                                          eccentric_anomaly=eccentric_anomaly,
+                                                          eccentricity=eccentricity)
 
-        vector_obstime = Versor(vector=np.array([1, 0, 0]) * self.distance_from_earth) \
-            .rotate(axis='z', angle=self.true_anomaly, copy=True) \
-            .rotate(axis='z', angle=self.argument_pericenter, copy=True) \
-            .rotate(axis='x', angle=self.inclination, copy=True) \
-            .rotate(axis='z', angle=self.longitude_an, copy=True)
+        vector_obstime = Versor(vector=np.array([1, 0, 0]) * distance_from_earth) \
+            .rotate(axis='z', angle=true_anomaly, copy=True) \
+            .rotate(axis='z', angle=argument_pericenter, copy=True) \
+            .rotate(axis='x', angle=inclination, copy=True) \
+            .rotate(axis='z', angle=longitude_an, copy=True)
 
-        return vector_obstime
+        if return_complete:
+            orb_pars = {'semimaj': semimaj,
+                        'inclination': inclination,
+                        'longitude an': longitude_an,
+                        'argument pericenter': argument_pericenter,
+                        'eccentricity': eccentricity,
+                        'mean anomaly': mean_anomaly,
+                        'eccentric anomaly': eccentric_anomaly,
+                        'true anomaly': true_anomaly,
+                        'distance from earth': distance_from_earth}
+            return vector_obstime, orb_pars
+        else:
+            return vector_obstime
 
     def at_date(self, obstime):
         """
@@ -84,22 +102,68 @@ class Moon(SkyLocation):
 
         self.obstime = obstime
 
-        self.vector_obstime = self.observe_at_date(obstime)
+        self.vector_obstime, orb_pars = self.observe_at_date(obstime, return_complete=True)
         self.ra = self.vector_obstime.ra
         self.dec = self.vector_obstime.dec
 
-    def __approx_ecc_anomaly(self):
+        self.__semimaj = orb_pars['semimaj']
+        self.__inclination = orb_pars['inclination']
+        self.__longitude_an = orb_pars['longitude an']
+        self.__argument_pericenter = orb_pars['argument pericenter']
+        self.__ecc = orb_pars['eccentricity']
+        self.__mean_anomaly = orb_pars['mean anomaly']
+        self.__eccentric_anomaly = orb_pars['eccentric anomaly']
+
+    def __approx_ecc_anomaly(self, mean_anomaly=None, eccentricity=None):
+        if mean_anomaly is not None and eccentricity is None:
+            raise ValueError(errmsg.notAllDeclared)
+        elif mean_anomaly is None and eccentricity is not None:
+            raise ValueError(errmsg.notAllDeclared)
+
+        if mean_anomaly is None and eccentricity is None:
+            mean = self.mean_anomaly.to(u.rad)
+            ecc = self.eccentricity
+        else:
+            mean = mean_anomaly.to(u.rad)
+            ecc = eccentricity
         # Method:
         #  1998aalg.book.....M (p196)
-        mean = self.mean_anomaly.to(u.rad)
 
         ecc_an = mean
-        ecc_an_next = mean - self.eccentricity * np.sin(ecc_an) * u.rad
+        ecc_an_next = mean - ecc * np.sin(ecc_an) * u.rad
         while abs(ecc_an_next.to(u.deg) - ecc_an.to(u.deg)) > (1e-4 * u.arcsec).to(u.deg):
             ecc_an = ecc_an_next
-            ecc_an_next = mean - self.eccentricity * np.sin(ecc_an) * u.rad
+            ecc_an_next = mean - ecc * np.sin(ecc_an) * u.rad
 
         return Angle(ecc_an_next.to(u.deg))
+
+    def __true_anomaly(self, eccentric_anomaly=None, eccentricity=None):
+        if eccentric_anomaly is not None and eccentricity is None:
+            raise ValueError(errmsg.notAllDeclared)
+        elif eccentric_anomaly is None and eccentricity is not None:
+            raise ValueError(errmsg.notAllDeclared)
+
+        if eccentric_anomaly is None and eccentricity is None:
+            eccentric_anomaly = self.eccentric_anomaly
+            eccentricity = self.eccentricity
+
+        true_an = (2 * np.arctan(np.sqrt((1 + eccentricity) / (1 - eccentricity))  * np.tan(eccentric_anomaly / 2)))
+        return true_an.to(u.deg)
+
+    def __distance_from_center(self, semimaj=None, eccentric_anomaly=None, eccentricity=None):
+        if semimaj is not None and (eccentric_anomaly is None or eccentricity is None):
+            raise ValueError(errmsg.notAllDeclared)
+        elif eccentric_anomaly is not None and (semimaj is None or eccentricity is None):
+            raise ValueError(errmsg.notAllDeclared)
+        elif eccentricity is not None and (semimaj is None or eccentric_anomaly is None):
+            raise ValueError(errmsg.notAllDeclared)
+
+        if semimaj is None and eccentric_anomaly is None and eccentricity is None:
+            semimaj = self.semimaj
+            eccentric_anomaly = self.eccentric_anomaly
+            eccentricity = self.eccentricity
+
+        return semimaj * (1 - eccentricity * np.cos(eccentric_anomaly))
 
     def calculate_moon_phase(self, sun, obstime):
         """
@@ -153,8 +217,7 @@ class Moon(SkyLocation):
 
     @property
     def true_anomaly(self):
-        return (2 * np.arctan(np.sqrt((1 + self.eccentricity) / (1 - self.eccentricity))
-                              * np.tan(self.eccentric_anomaly / 2))).to(u.deg)
+        return self.__true_anomaly()
 
     @property
     def inclination(self):
@@ -170,4 +233,4 @@ class Moon(SkyLocation):
 
     @property
     def distance_from_earth(self):
-        return self.semimaj * (1 - self.eccentricity * np.cos(self.eccentric_anomaly))
+        return self.__distance_from_center()
