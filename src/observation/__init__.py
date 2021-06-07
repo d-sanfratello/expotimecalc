@@ -186,7 +186,9 @@ class Observation:
             return Angle((90 - np.rad2deg(np.arccos(ps))) % -90 * u.deg)
 
     def estimate_quality(self, target, location, obstime, sun,
-                         parameter=1.5, interval=2*u.hour, par_type='airmass'):
+                         parameter=1.5, threshold=None,
+                         interval=0 * u.hour,
+                         par_type='airmass', thr_type=None):
         """
         Metodo che stima la durata della permanenza di un oggetto al di sopra di una certa altezza dall'orizzonte, entro
         una certa distanza dallo zenith o una certa airmass. Inoltre riporta se tale oggetto permane sopra tale altezza
@@ -209,6 +211,9 @@ class Observation:
         if not isinstance(parameter, (Quantity, int, float)):
             raise TypeError(errmsg.notThreeTypesError.format('parameter',
                                                              'astropy.units.quantity.Quantity', 'int', 'float'))
+        if not isinstance(threshold, (Quantity, int, float)) and threshold is not None:  # remove None check when update
+            raise TypeError(errmsg.notThreeTypesError.format('threshold',
+                                                             'astropy.units.quantity.Quantity', 'int', 'float'))
         if not isinstance(interval, Quantity):
             raise TypeError(errmsg.notTypeError.format('interval', 'astropy.units.quanrtity.Quantity'))
 
@@ -219,11 +224,25 @@ class Observation:
         elif isinstance(parameter, int) and par_type not in ['airmass']:
             raise ValueError(errmsg.airmassError)
 
+        if not isinstance(thr_type, str) and thr_type is not None:  # remove None check when update
+            raise TypeError(errmsg.notTypeError.format('thr_type', 'string'))
+        elif isinstance(threshold, Quantity) and thr_type not in ['alt', 'z']:
+            raise ValueError(errmsg.altZError)
+        elif isinstance(threshold, int) and thr_type not in ['airmass']:
+            raise ValueError(errmsg.airmassError)
+
         warnings.warn("`location` parameter will be removed in a future version, using the internal instance of "
                       "`Location` class.", DeprecationWarning)
         warnings.warn("`sun` parameter will be removed in a future version, by using the internal instance of `Sun` "
-                      "class.",
+                      "class.", DeprecationWarning)
+        warnings.warn("`parameter` argument will be removed in a future version, use the `threshold` argument, "
+                      "instead.", DeprecationWarning)
+        warnings.warn("`par_type` argument will ve removed in a future version, use the `thr_type` argument, instead.",
                       DeprecationWarning)
+        if threshold is not None:
+            parameter = threshold
+        if thr_type is not None:
+            par_type = thr_type
 
         # I calcoli nel codice sono effettuati in distanza zenitale, per cui parametri forniti in altri modi sono
         # convertiti in z.
