@@ -9,6 +9,7 @@ from astropy.coordinates import Angle
 from astropy.coordinates.angles import Longitude
 from numbers import Number
 
+from .sun import Sun
 from .. import Versor
 from ...time import Time
 from .. import SkyLocation
@@ -126,6 +127,16 @@ class Planet(SkyLocation):
         self.ra = self.vector_obstime.ra
         self.dec = self.vector_obstime.dec
         self.__logger.debug(f'ra-dec set by `at_date` method at {self.ra.hms}, {self.dec.deg}')
+
+    def velocity(self, reference, obstime):
+        if not isinstance(reference, (Planet, Sun)):
+            raise TypeError(errmsg.notTwoTypesError.format('reference', 'Planet', 'planet.Sun'))
+        if not isinstance(obstime, Time):
+            raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
+
+        self.at_date(obstime)
+        reference.at_date(obstime)
+
 
     def __approx_ecc_anomaly(self):
         # Method:
