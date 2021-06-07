@@ -147,6 +147,14 @@ class Planet(SkyLocation):
         self.dec = self.vector_obstime.dec
         self.__logger.debug(f'ra-dec set by `at_date` method at {self.ra.hms}, {self.dec.deg}')
 
+        self.__semimaj = orb_pars['semimaj']
+        self.__inclination = orb_pars['inclination']
+        self.__longitude_an = orb_pars['longitude an']
+        self.__argument_pericenter = orb_pars['argument pericenter']
+        self.__ecc = orb_pars['eccentricity']
+        self.__mean_anomaly = orb_pars['mean anomaly']
+        self.__eccentric_anomaly = orb_pars['eccentric anomaly']
+
     def velocity(self, reference, obstime):
         if not isinstance(reference, (Planet, Sun)):
             raise TypeError(errmsg.notTwoTypesError.format('reference', 'Planet', 'planet.Sun'))
@@ -155,16 +163,6 @@ class Planet(SkyLocation):
 
         self.at_date(obstime)
         reference.at_date(obstime)
-
-
-    def __approx_ecc_anomaly(self):
-        self.__semimaj = orb_pars['semimaj']
-        self.__inclination = orb_pars['inclination']
-        self.__longitude_an = orb_pars['longitude an']
-        self.__argument_pericenter = orb_pars['argument pericenter']
-        self.__ecc = orb_pars['eccentricity']
-        self.__mean_anomaly = orb_pars['mean anomaly']
-        self.__eccentric_anomaly = orb_pars['eccentric anomaly']
 
     def __approx_ecc_anomaly(self, mean_anomaly=None, eccentricity=None):
         if mean_anomaly is not None and eccentricity is None:
