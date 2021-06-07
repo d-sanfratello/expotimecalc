@@ -1,4 +1,5 @@
 import numpy as np
+import warnings
 
 from astropy import units as u
 from astropy import constants as cts
@@ -12,6 +13,7 @@ from ..constants import Equinox2000
 from .. import errmsg
 
 
+# noinspection PyUnresolvedReferences
 class Sun(SkyLocation):
     equinoxes = {'equinoxJ2000': Equinox2000}
 
@@ -21,6 +23,8 @@ class Sun(SkyLocation):
         """
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
+        warnings.warn("`Moon` class is deprecated and will be removed in future updates. Please use "
+                      "`skylocation.planets.moon.Moon` class for new prjects.", DeprecationWarning)
 
         # Viene inizializzato alla posizione (0,0), che è quella del Sole alla data dell'equinozio di riferimento.
         super(Sun, self).__init__(locstring=None, ra=0*u.deg, dec=0*u.deg, distance=1 * cts.au,

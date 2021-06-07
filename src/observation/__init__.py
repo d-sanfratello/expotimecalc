@@ -12,8 +12,8 @@ from matplotlib.colors import Normalize
 
 from ..location import Location
 from ..skylocation import SkyLocation
-from ..skylocation.sun import Sun
-from ..skylocation.moon import Moon
+from ..skylocation.planets.sun import Sun
+from ..skylocation.planets.moon import Moon
 from ..time import Time
 
 from ..constants import Tsidday

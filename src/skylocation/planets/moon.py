@@ -1,50 +1,33 @@
-import logging
 import numpy as np
-import pykep as pk
-# https://ui.adsabs.harvard.edu/abs/2015arXiv151100821I/abstract
 
 from astropy import units as u
 from astropy import constants as cts
-from astropy.coordinates import Angle
-from astropy.coordinates.angles import Longitude
+from astropy.coordinates.angles import Angle
+from skyfield.api import load
+from skyfield.elementslib import osculating_elements_of
 
-from .. import Versor
 from ...time import Time
+from ... import Versor
 from .. import SkyLocation
 
+from ... import Equinox2000
+
 from .. import errmsg
-from .. import logger
 
 
 # noinspection PyUnresolvedReferences
-class Planet(SkyLocation):
-    __private_arguments = ['is_earth']
+class Moon(SkyLocation):
+    equinoxes = {'equinoxJ2000': Equinox2000}
 
-    def __init__(self, obstime, *, name=None, epoch='J2000', **kwargs):
-
+    def __init__(self, obstime):
+        """
+        Classe che descrive il moto della Luna in funzione della data di osservazione.
+        """
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
-        if name is None:
-            raise ValueError(errmsg.mustDeclareName)
 
-        if not bool(kwargs):
-            self.__is_earth = False
-        else:
-            k = kwargs.keys()
-            for _ in k:
-                if _ not in self.__private_arguments:
-                    raise KeyError(errmsg.keyError)
-                else:
-                    self.__is_earth = kwargs[_]
-        self.__logger = logging.getLogger('src.skylocation.planets.Planet')
-        self.__logger.setLevel(logger.getEffectiveLevel())
-
-        self.__logger.debug('Initializing `Planet` class')
-        self.__logger.info(f'instance of {name}')
-        self.__logger.debug(f'{name} is earth: {self.__is_earth}')
-
-        self.__mass_sun = cts.M_sun
-        self.__grav_const = cts.G * self.__mass_sun / (4 * np.pi ** 2)
+        self.__mass_earth = cts.M_earth
+        self.__grav_const = cts.G * self.__mass_earth / (4 * np.pi ** 2)
 
         self.__semimaj = None
         self.__ecc = None
@@ -56,65 +39,46 @@ class Planet(SkyLocation):
 
         self.at_date(obstime)
 
-        super(Planet, self).__init__(locstring=None, ra=self.vector_obstime.ra, dec=self.vector_obstime.dec,
-                                     distance=self.distance_from_sun, obstime=obstime,
-                                     ra_unit='deg', dec_unit='deg', epoch=epoch, name=name)
+        super(Moon, self).__init__(locstring=None,
+                                   ra=self.vector_obstime.ra, dec=self.vector_obstime.dec,
+                                   distance=self.distance_from_earth, obstime=obstime,
+                                   ra_unit='deg', dec_unit='deg', epoch='J2000', name='Moon')
 
     def observe_at_date(self, obstime, return_complete=False):
+        """
+        Metodo che calcola, senza salvarne il risultato, la posizione della Luna ad una specifica data.
+        """
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
         if not isinstance(return_complete, bool):
             raise TypeError(errmsg.notTypeError.format('return_complete', 'bool'))
-        self.__logger.debug(f'`obstime`: {obstime} call.')
 
-        epoch = pk.epoch_from_string(obstime.iso)
+        ts = load.timescale()
+        t = ts.from_astropy(obstime)
+        planets = load('de421.bsp')
+        moon = planets['moon']
+        earth = planets['earth']
+        position = (moon - earth).at(t)
+        elements = osculating_elements_of(position)
 
-        __semimaj, __ecc, __inclination, __ra_an, __peri_arg, __mean_anomaly = self.ephemeris.osculating_elements(epoch)
-        __semimaj *= u.m
-        semimaj = __semimaj.to(u.AU)
-
-        __inclination *= u.rad
-        inclination = Angle(__inclination.to(u.deg))
-
-        __ra_an *= u.rad
-        longitude_an = Longitude(__ra_an.to(u.deg))
-
-        __peri_arg *= u.rad
-        argument_pericenter = Angle(__peri_arg.to(u.deg))
-        eccentricity = np.float64(__ecc)
-
-        __mean_anomaly *= u.rad
-        mean_anomaly = Angle(__mean_anomaly.to(u.deg))
+        semimaj = elements.semi_major_axis.to(u.m)
+        inclination = Angle(elements.inclination.to(u.deg))
+        argument_pericenter = Angle(elements.argument_of_periapsis.to(u.deg))
+        longitude_an = Angle(elements.longitude_of_ascending_node.to(u.deg))
+        eccentricity = elements.eccentricity
+        mean_anomaly = Angle(elements.mean_anomaly.to(u.deg))
         eccentric_anomaly = self.__approx_ecc_anomaly(mean_anomaly=mean_anomaly, eccentricity=eccentricity)
         true_anomaly = self.__true_anomaly(eccentric_anomaly=eccentric_anomaly, eccentricity=eccentricity)
+        distance_from_earth = self.__distance_from_center(semimaj=semimaj,
+                                                          eccentric_anomaly=eccentric_anomaly,
+                                                          eccentricity=eccentricity)
 
-        distance_from_sun = self.__distance_from_center(semimaj=semimaj,
-                                                        eccentric_anomaly=eccentric_anomaly,
-                                                        eccentricity=eccentricity)
-
-        if self.__is_earth:
-            self.__logger.info(f'It is Earth.')
-            self.__logger.debug(f'reference observer is the Sun')
-        else:
-            self.__logger.info(f'It is NOT Earth. Defining an `Earth` instance as reference')
-            from .earth import Earth
-            reference_observer = Earth(obstime=obstime).vector_obstime
-            self.__logger.debug(f'Earth reference defined as {reference_observer.vsr}, {reference_observer.radius}')
-
-        self.__logger.info(f'Rotating body with osculating parameters from ephemeris')
-        vector_obstime = Versor(vector=np.array([1, 0, 0]) * distance_from_sun) \
+        vector_obstime = Versor(vector=np.array([1, 0, 0]) * distance_from_earth) \
             .rotate(axis='z', angle=true_anomaly, copy=True) \
             .rotate(axis='z', angle=argument_pericenter, copy=True) \
             .rotate(axis='x', angle=inclination, copy=True) \
             .rotate(axis='z', angle=longitude_an, copy=True)
 
-        if not self.__is_earth:
-            vector_obstime = (vector_obstime - reference_observer) \
-                .rotate(axis='z', angle=self.equinox_prec(obstime), copy=True) \
-                .rotate(axis='x', angle=self.axial_tilt(obstime), copy=True)  # check for rotate or rotate_inv
-
-        self.__logger.info(f'Body position estimated at {vector_obstime.ra.hms}, {vector_obstime.dec.deg}, '
-                           f'{vector_obstime.radius}. Returning `vector_obstime` from `observe_at_date`.')
         if return_complete:
             orb_pars = {'semimaj': semimaj,
                         'inclination': inclination,
@@ -124,22 +88,23 @@ class Planet(SkyLocation):
                         'mean anomaly': mean_anomaly,
                         'eccentric anomaly': eccentric_anomaly,
                         'true anomaly': true_anomaly,
-                        'distance from sun': distance_from_sun}
+                        'distance from earth': distance_from_earth}
             return vector_obstime, orb_pars
         else:
             return vector_obstime
 
     def at_date(self, obstime):
+        """
+        Metodo che salva il risultato di `Moon.observe_at_date` nei relativi attributi di classe.
+        """
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
-        self.__logger.debug(f'obstime: {obstime}')
 
         self.obstime = obstime
 
         self.vector_obstime, orb_pars = self.observe_at_date(obstime, return_complete=True)
         self.ra = self.vector_obstime.ra
         self.dec = self.vector_obstime.dec
-        self.__logger.debug(f'ra-dec set by `at_date` method at {self.ra.hms}, {self.dec.deg}')
 
         self.__semimaj = orb_pars['semimaj']
         self.__inclination = orb_pars['inclination']
@@ -182,7 +147,7 @@ class Planet(SkyLocation):
             eccentric_anomaly = self.eccentric_anomaly
             eccentricity = self.eccentricity
 
-        true_an = (2 * np.arctan(np.sqrt((1 + eccentricity) / (1 - eccentricity)) * np.tan(eccentric_anomaly / 2)))
+        true_an = (2 * np.arctan(np.sqrt((1 + eccentricity) / (1 - eccentricity))  * np.tan(eccentric_anomaly / 2)))
         return true_an.to(u.deg)
 
     def __distance_from_center(self, semimaj=None, eccentric_anomaly=None, eccentricity=None):
@@ -199,6 +164,24 @@ class Planet(SkyLocation):
             eccentricity = self.eccentricity
 
         return semimaj * (1 - eccentricity * np.cos(eccentric_anomaly))
+
+    def calculate_moon_phase(self, sun, obstime):
+        """
+        Metodo che calcola la fase della Luna, dato il Sole. Notare che non vi è alcuna differenza tra fase crescente e
+        calante. Il metodo restituisce `1` se la Luna è piena e `0` se è nuova.
+        """
+        if not isinstance(sun, SkyLocation):
+            raise TypeError(errmsg.notTypeError.format('sun', 'src.skylocation.sun.Sun'))
+        if not isinstance(obstime, Time):
+            raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
+
+        moon_obstime = self.observe_at_date(obstime)
+        sun_obstime = sun.observe_at_date(obstime)
+
+        # Calcolo del prodotto scalare dei vettori, rinormalizzato per dare il valore richiesto. Nel caso di Luna Nuova,
+        # il prodotto scalare varrebbe `1`, e `-1` nel caso di Luna Piena. In questo modo si restituiscono i valori
+        # dichiarati nella descrizione del metodo.
+        return (- moon_obstime.vsr.dot(sun_obstime.vsr) + 1) / 2
 
     @property
     def longitude_an(self):
@@ -218,7 +201,7 @@ class Planet(SkyLocation):
 
     @property
     def semimin(self):
-        return self.semimaj * np.sqrt(1 - self.eccentricity**2)
+        return self.semimaj * np.sqrt(1 - self.eccentricity ** 2)
 
     @property
     def argument_pericenter(self):
@@ -249,14 +232,5 @@ class Planet(SkyLocation):
         return self.semimaj * (1 + self.eccentricity)
 
     @property
-    def distance_from_sun(self):
+    def distance_from_earth(self):
         return self.__distance_from_center()
-
-
-from .mercury import Mercury
-from .venus import Venus
-from .earth import Earth
-from .moon import Moon
-from .mars import Mars
-from .jupiter import Jupiter
-from .sun import Sun
