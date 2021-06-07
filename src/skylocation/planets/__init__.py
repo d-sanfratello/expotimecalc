@@ -1,22 +1,15 @@
 import logging
 import numpy as np
-import pykep as pk
-# https://ui.adsabs.harvard.edu/abs/2015arXiv151100821I/abstract
+import pykep as pk  # https://ui.adsabs.harvard.edu/abs/2015arXiv151100821I/abstract
 
 from astropy import units as u
 from astropy import constants as cts
 from astropy.coordinates import Angle
 from astropy.coordinates.angles import Longitude
-from numbers import Number
 
-from .sun import Sun
 from .. import Versor
 from ...time import Time
 from .. import SkyLocation
-
-from .. import Equinox2000
-from .. import tJ2000
-from ... import Tsidyear
 
 from .. import errmsg
 from .. import logger
@@ -156,18 +149,69 @@ class Planet(SkyLocation):
         self.__eccentric_anomaly = orb_pars['eccentric anomaly']
 
     def velocity(self, reference, obstime):
-        if not isinstance(reference, (Planet, Sun)):
-            raise TypeError(errmsg.notTwoTypesError.format('reference', 'Planet', 'planet.Sun'))
+        from .sun import Sun
+        from .earth import Earth
+        if not isinstance(reference, (Earth, Sun)):
+            raise TypeError(errmsg.notTwoTypesError.format('reference', 'Earth', 'planet.Sun'))
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
 
         vector_obstime, orb_pars = self.observe_at_date(obstime, return_complete=True)
 
+        e = orb_pars['eccentricity']
+        f = orb_pars['true anomaly']
+        a = orb_pars['semimaj']
+        r = orb_pars['distance from sun']
+        argument_pericenter = orb_pars['argument pericenter']
+        inclination = orb_pars['inclination']
+        longitude_an = orb_pars['longitude an']
 
+        radial_v_mod = e * np.sin(f) * np.sqrt(cts.G * (self.mass + self.mass_central) / (a * (1 - e**2)))
+        tangen_v_mod = np.sqrt(cts.G * (self.mass + self.mass_central) * a * (1 - e**2)) / r
 
-        reference_obstime, ref_orb_pars = reference.observe_at_date(obstime, return_complete=True)
+        radial_v_mod = radial_v_mod.to(u.km / u.s)
+        tangen_v_mod = tangen_v_mod.to(u.km / u.s)
 
+        vel_radial = Versor(vector=np.array([np.cos(f), np.sin(f), 0]) * radial_v_mod)
+        vel_tangen = Versor(vector=np.array([-np.sin(f), np.cos(f), 0]) * tangen_v_mod)
 
+        velocity = (vel_radial + vel_tangen) \
+            .rotate(axis='z', angle=argument_pericenter, copy=True) \
+            .rotate(axis='x', angle=inclination, copy=True) \
+            .rotate(axis='z', angle=longitude_an, copy=True)
+
+        if isinstance(reference, Planet):
+            reference_obstime, ref_orb_pars = reference.observe_at_date(obstime, return_complete=True)
+
+            e_ref = ref_orb_pars['eccentricity']
+            f_ref = ref_orb_pars['true anomaly']
+            a_ref = ref_orb_pars['semimaj']
+            r_ref = ref_orb_pars['distance from sun']
+            argument_pericenter_ref = ref_orb_pars['argument pericenter']
+            inclination_ref = ref_orb_pars['inclination']
+            longitude_an_ref = ref_orb_pars['longitude an']
+
+            radial_v_mod_ref = e_ref * np.sin(f_ref) * \
+                np.sqrt(cts.G * (self.mass + self.mass_central) / (a_ref * (1 - e_ref ** 2)))
+            tangen_v_mod_ref = np.sqrt(cts.G * (self.mass + self.mass_central) * a_ref * (1 - e_ref ** 2)) / r_ref
+
+            radial_v_mod_ref = radial_v_mod_ref.to(u.km / u.s)
+            tangen_v_mod_ref = tangen_v_mod_ref.to(u.km / u.s)
+
+            vel_radial_ref = Versor(vector=np.array([np.cos(f), np.sin(f), 0]) * radial_v_mod_ref)
+            vel_tangen_ref = Versor(vector=np.array([-np.sin(f), np.cos(f), 0]) * tangen_v_mod_ref)
+
+            velocity_ref = (vel_radial_ref + vel_tangen_ref) \
+                .rotate(axis='z', angle=argument_pericenter_ref, copy=True) \
+                .rotate(axis='x', angle=inclination_ref, copy=True) \
+                .rotate(axis='z', angle=longitude_an_ref, copy=True)
+
+            rel_velocity = velocity - velocity_ref
+            rel_velocity_mod = rel_velocity.vsr.dot(vector_obstime.vsr) * rel_velocity.radius
+
+            return rel_velocity_mod
+        else:
+            return velocity
 
     def __approx_ecc_anomaly(self, mean_anomaly=None, eccentricity=None):
         if mean_anomaly is not None and eccentricity is None:
@@ -291,4 +335,3 @@ from .earth import Earth
 from .moon import Moon
 from .mars import Mars
 from .jupiter import Jupiter
-from .sun import Sun
