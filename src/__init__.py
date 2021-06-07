@@ -1,4 +1,4 @@
-__version__ = "1.4.0-a"
+__version__ = "1.4.0-a.1"
 __author__ = "Daniele Sanfratello"
 
 import logging
