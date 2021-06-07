@@ -71,3 +71,8 @@ class Sun(SkyLocation):
     @property
     def distance_from_earth(self):
         return self.__earth.distance_from_sun
+
+    @property
+    def mass(self):
+        return self.__mass_sun
+    mass_central = mass

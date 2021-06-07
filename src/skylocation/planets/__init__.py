@@ -161,8 +161,13 @@ class Planet(SkyLocation):
         if not isinstance(obstime, Time):
             raise TypeError(errmsg.notTwoTypesError.format('obstime', 'src.time.Time', 'astropy.time.Time'))
 
-        self.at_date(obstime)
-        reference.at_date(obstime)
+        vector_obstime, orb_pars = self.observe_at_date(obstime, return_complete=True)
+
+
+
+        reference_obstime, ref_orb_pars = reference.observe_at_date(obstime, return_complete=True)
+
+
 
     def __approx_ecc_anomaly(self, mean_anomaly=None, eccentricity=None):
         if mean_anomaly is not None and eccentricity is None:
@@ -266,6 +271,18 @@ class Planet(SkyLocation):
     @property
     def distance_from_sun(self):
         return self.__distance_from_center()
+
+    @property
+    def mass(self):
+        central_grav_par = self.ephemeris.mu_central_body
+        self_grav_par = self.ephemeris.mu_self
+
+        mass_ratio = self_grav_par / central_grav_par
+        return mass_ratio * self.mass_central
+
+    @property
+    def mass_central(self):
+        return self.__mass_sun
 
 
 from .mercury import Mercury

@@ -234,3 +234,12 @@ class Moon(SkyLocation):
     @property
     def distance_from_earth(self):
         return self.__distance_from_center()
+
+    @property
+    def mass(self):
+        # Kenneth Seidelmann, "Explanatory Supplement to the astronomical almanac" p. 701
+        return 7.3483e22 * u.kg
+
+    @property
+    def mass_central(self):
+        return self.__mass_earth
