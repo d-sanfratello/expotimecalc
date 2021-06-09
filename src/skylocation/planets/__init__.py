@@ -246,7 +246,7 @@ class Planet(SkyLocation):
             eccentric_anomaly = self.eccentric_anomaly
             eccentricity = self.eccentricity
 
-        true_an = (2 * np.arctan(np.sqrt((1 + eccentricity) / (1 - eccentricity)) * np.tan(eccentric_anomaly / 2)))
+        true_an = 2 * np.arctan(np.sqrt((1 + eccentricity) / (1 - eccentricity)) * np.tan(eccentric_anomaly / 2))
         return true_an.to(u.deg)
 
     def __distance_from_center(self, semimaj=None, eccentric_anomaly=None, eccentricity=None):
