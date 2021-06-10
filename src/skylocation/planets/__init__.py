@@ -19,7 +19,7 @@ from .. import logger
 
 # noinspection PyUnresolvedReferences
 class Planet(SkyLocation):
-    __private_arguments = ['is_earth']
+    __private_arguments = ['is_earth', 'standard_pars']
 
     def __init__(self, obstime, *, name=None, epoch='J2000', **kwargs):
 
@@ -43,6 +43,8 @@ class Planet(SkyLocation):
         self.__logger.debug('Initializing `Planet` class')
         self.__logger.info(f'instance of {name}')
         self.__logger.debug(f'{name} is earth: {self.__is_earth}')
+
+        self.__standard_pars = kwargs['standard_pars']
 
         self.__mass_sun = cts.M_sun
         self.__grav_const = cts.G * self.__mass_sun / (4 * np.pi ** 2)
@@ -129,7 +131,7 @@ class Planet(SkyLocation):
 
             errors = self.__osculating_errors(orb_pars, obstime)
 
-            for key, value in errors.items:
+            for key, value in errors.items():
                 orb_pars[key] = value
 
             return vector_obstime, orb_pars
@@ -240,18 +242,18 @@ class Planet(SkyLocation):
         ecc_an_next = mean - ecc * np.sin(ecc_an) * u.rad
         if errors is not None:
             e_ecc_an_next = np.sqrt((1 + ecc * np.cos(ecc_an))**2 * errors['e_mean_anomaly']**2 +
-                                    np.sin(ecc_an)**2 * errors['e_eccentricity']**2)
+                                    np.sin(ecc_an)**2 * errors['e_eccentricity']**2 * u.rad**2)
 
         while abs(ecc_an_next.to(u.deg) - ecc_an.to(u.deg)) > (1e-4 * u.arcsec).to(u.deg):
             ecc_an = ecc_an_next
             ecc_an_next = mean - ecc * np.sin(ecc_an) * u.rad
             if errors is not None:
-                e_ecc_an_next = np.sqrt(np.sqrt(errors['e_mean_anomaly']**2 +
-                                                np.sin(ecc_an)**2 * errors['e_eccentricity']**2 +
-                                                ecc**2 * np.cos(ecc_an)**2 * e_ecc_an_next))
+                e_ecc_an_next = np.sqrt(errors['e_mean_anomaly']**2 +
+                                        np.sin(ecc_an)**2 * errors['e_eccentricity']**2 * u.rad**2 +
+                                        ecc**2 * np.cos(ecc_an)**2 * e_ecc_an_next**2)
 
         if errors is not None:
-            return e_ecc_an_next
+            return Angle(e_ecc_an_next.to(u.deg))
         else:
             return Angle(ecc_an_next.to(u.deg))
 
@@ -283,8 +285,9 @@ class Planet(SkyLocation):
 
         if errors is not None:
             return np.sqrt(errors['e_semimaj']**2 +
-                           (semimaj * np.cos(eccentric_anomaly))**2 * errors['e_ecccentricity']**2 +
-                           (semimaj * eccentricity * np.sin(eccentric_anomaly))**2 * errors['e_ecc_anomaly']**2)
+                           (semimaj * np.cos(eccentric_anomaly))**2 * errors['e_eccentricity']**2 +
+                           (semimaj * eccentricity * np.sin(eccentric_anomaly))**2 *
+                           errors['e_ecc_anomaly'].to(u.rad).value**2)
         else:
             return semimaj * (1 - eccentricity * np.cos(eccentric_anomaly))
 
@@ -299,7 +302,7 @@ class Planet(SkyLocation):
         #             'true anomaly': true_anomaly, #
         #             'distance from sun': distance_from_sun} #
 
-        Teph = obstime.tbd
+        Teph = obstime.tdb
         Tcenturies = ((Teph.jd - tJ2000.jd) / 36525) * century
         dTcent = ((1 / 86400) / 36525) * century
 
@@ -310,33 +313,34 @@ class Planet(SkyLocation):
                                            (self.__standard_pars['Idot'] ** 2) * dTcent**2 +
                                            Tcenturies**2 * (1e-8 * u.deg / century) ** 2),
                   'e_longitude_an': np.sqrt((1e-8 * u.deg)**2 +
-                                            (self.__standard_pars['lon_an_dot'] ** 2) * dTcent**2 +
+                                            (self.__standard_pars['long_an_dot'] ** 2) * dTcent**2 +
                                             Tcenturies**2 * (1e-8 * u.deg / century) ** 2),
                   'e_eccentricity': np.sqrt(1e-8**2 +
                                             (self.__standard_pars['edot'] ** 2) * dTcent**2 +
                                             Tcenturies**2 * (1e-8 / century) ** 2),
                   'e_mean_longitude': np.sqrt((1e-8 * u.deg)**2 +
-                                              (self.__standard_pars['mean_lon_dot'] ** 2) * dTcent**2 +
+                                              (self.__standard_pars['mean_long_dot'] ** 2) * dTcent**2 +
                                               Tcenturies**2 * (1e-8 * u.deg / century) ** 2),
-                  'e_lon_peri': np.sqrt((1e-8 * u.deg)**2 +
-                                        (self.__standard_pars['lon_peri_dot'] ** 2) * dTcent**2 +
-                                        Tcenturies**2 * (1e-8 * u.deg / century) ** 2)}
+                  'e_long_peri': np.sqrt((1e-8 * u.deg)**2 +
+                                         (self.__standard_pars['long_peri_dot'] ** 2) * dTcent**2 +
+                                         Tcenturies**2 * (1e-8 * u.deg / century) ** 2)}
 
-        errors['e_arg_peri'] = np.sqrt(errors['e_lon_peri'] ** 2 + errors['e_longitude_an'] ** 2)
-        errors['e_mean_anomaly'] = np.sqrt(errors['e_mean_longitude'] ** 2 + errors['e_lon_peri'] ** 2)
+        errors['e_arg_peri'] = np.sqrt(errors['e_long_peri'] ** 2 + errors['e_longitude_an'] ** 2)
+        errors['e_mean_anomaly'] = np.sqrt(errors['e_mean_longitude'] ** 2 + errors['e_long_peri'] ** 2)
         errors['e_ecc_anomaly'] = self.__approx_ecc_anomaly(mean_anomaly=orb_pars['mean anomaly'],
-                                                            eccentricity=orb_par['eccentricity'],
+                                                            eccentricity=orb_pars['eccentricity'],
                                                             errors=errors)
 
-        arg = np.sqrt((1 + orb_pars['eccentricity']) / (1 - orb_pars['eccentricity'])) *\
-              np.tan(0.5 * orb_pars['eccentric anomaly'])
-        arg_de = (1 + orb_pars['eccentricity'])**(-0.5) / (1 - orb_pars['eccentricity'])**(2-0.5) *\
-                 np.tan(0.5 * orb_pars['eccentric anomaly'])
+        arg = np.sqrt((1 + orb_pars['eccentricity']) / (1 - orb_pars['eccentricity'])) * \
+            np.tan(0.5 * orb_pars['eccentric anomaly'])
+        arg_de = (1 + orb_pars['eccentricity'])**(-0.5) / (1 - orb_pars['eccentricity'])**(2-0.5) * \
+            np.tan(0.5 * orb_pars['eccentric anomaly'])
         arg_dE = 0.5 * np.sqrt((1 + orb_pars['eccentricity']) / (1 - orb_pars['eccentricity'])) /\
-                 np.cos(0.5 * orb_pars['eccentric anomaly'])**2
+            np.cos(0.5 * orb_pars['eccentric anomaly'])**2
 
-        errors['e_true_anomaly'] = 2 / (1 + arg**2) * np.sqrt(arg_de**2 * errors['e_eccentricity'] +
-                                                              arg_dE**2 * errors['e_ecc_anomaly'])
+        errors['e_true_anomaly'] = 2 / (1 + arg**2) * np.sqrt(arg_de**2 * errors['e_eccentricity']**2 * u.rad**2 +
+                                                              arg_dE**2 * errors['e_ecc_anomaly']**2)
+        errors['e_true_anomaly'] = errors['e_true_anomaly'].to(u.deg)
         errors['e_distance'] = self.__distance_from_center(semimaj=orb_pars['semimaj'],
                                                            eccentricity=orb_pars['eccentricity'],
                                                            eccentric_anomaly=orb_pars['eccentric anomaly'],
