@@ -217,7 +217,8 @@ class Planet(SkyLocation):
                 .rotate(axis='z', angle=longitude_an_ref, copy=True)
 
             rel_velocity = velocity - velocity_ref
-            rel_velocity_mod = rel_velocity.vsr.dot(vector_obstime.vsr) * rel_velocity.radius
+            rel_velocity_mod = rel_velocity.vsr.dot(vector_obstime.vsr) * rel_velocity.radius  # occhio che obstime è
+            # in equatoriali, mentre le velocità sono in eclittiche. Vedi che fare.
 
             return rel_velocity_mod
         else:
