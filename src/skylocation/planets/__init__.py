@@ -414,6 +414,7 @@ class Planet(SkyLocation):
         return self.__mass_sun
 
 
+from .sun import Sun
 from .mercury import Mercury
 from .venus import Venus
 from .earth import Earth
