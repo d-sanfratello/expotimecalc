@@ -3,8 +3,8 @@ from src.location import Location
 from src.time import Time
 from src.observation import Observation
 from src.skylocation import SkyLocation
-from src.skylocation.sun import Sun
-from src.skylocation.moon import Moon
+from src.skylocation.planets import Sun
+from src.skylocation.planets import Moon
 
 import numpy as np
 
