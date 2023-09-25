@@ -597,7 +597,7 @@ class Observation:
 
             factor_sidyear = Tsidyear / (360 * u.deg)
 
-            if sun.ra >= target_obstime.ra:
+            if self.sun.ra >= target_obstime.ra:
                 if (delta_phi := self.sun.ra - target_obstime.ra) <= 180 * u.deg:
                     delta_time = factor_sidyear * (180 * u.deg - delta_phi)
                 else:
