@@ -32,6 +32,7 @@ def init_times(time=None):
 # Funzione che genera i plot
 def plot_altaz_onday(targets, location, obstimes):
     times = [t.mjd for t in obstimes]
+    observation = Observation(location=location, obstime=obstimes[0])
 
     # esegue in ciclo dentro un dizionario di target passato come argomento.
     for key in targets.keys():
@@ -39,35 +40,44 @@ def plot_altaz_onday(targets, location, obstimes):
         target = targets[key]
 
         # calcolo di altezza e azimut secondo i metodi della classe Observation.
-        alt = [Observation.calculate_alt(target, location, t).deg for t in obstimes] * u.deg
-        az = [Observation.calculate_az(target, location, t).deg for t in obstimes] * u.deg
+        alt = [observation.calculate_alt(target, location, t).deg
+               for t in obstimes] * u.deg
+        az = [observation.calculate_az(target, location, t).deg
+              for t in obstimes] * u.deg
 
         # vengono generati il Sole e la Luna e ne vengono calcolate altezza e azimut (per la Luna) e alba, tramonto e
         # crepuscoli (per il Sole)
         sun = Sun(obstimes[0])
         moon = Moon(obstimes[0])
 
-        alt_moon = [Observation.calculate_alt(moon, location, t).deg for t in obstimes] * u.deg
-        az_moon = [Observation.calculate_az(moon, location, t).deg for t in obstimes] * u.deg
+        alt_moon = [observation.calculate_alt(moon, location, t).deg
+                    for t in obstimes] * u.deg
+        az_moon = [observation.calculate_az(moon, location, t).deg
+                   for t in obstimes] * u.deg
 
-        sun_naut_twi_0 = Observation.calculate_twilight(sun, location, obstimes[0], twilight='nautical')[1:]
-        sun_astr_twi_0 = Observation.calculate_twilight(sun, location, obstimes[0], twilight='astronomical')[1:]
+        sun_naut_twi_0 = observation.calculate_twilight(
+            sun, location, obstimes[0], twilight='nautical')[1:]
+        sun_astr_twi_0 = observation.calculate_twilight(
+            sun, location, obstimes[0], twilight='astronomical')[1:]
 
-        sun_set = Observation.calculate_set_time(sun, location, obstimes[0] - 6 * u.h)
-        sun_rise = Observation.calculate_rise_time(sun, location, obstimes[-1])
+        sun_set = observation.calculate_set_time(
+            sun, location, obstimes[0] - 6 * u.h)
+        sun_rise = observation.calculate_rise_time(
+            sun, location, obstimes[-1])
 
         fig = plt.figure(figsize=(8, 8))
 
-        fig.suptitle(targets[key].name + " alla data del {}".format(obstimes[0].iso[:-7]))
+        fig.suptitle(targets[key].name + " dalla data del {}".format(
+            obstimes[0].iso[:-12]))
 
         ## subplot1
         # plot dell'altezza sull'orizzonte
         ax1 = plt.subplot2grid((3, 1), (0, 0))
         ax1.grid()
-        ax1.plot(times, alt, 'k-')
-        ax1.plot(times, alt_moon, 'k-.')
+        ax1.scatter(times, alt_moon, color='grey', marker='o')
+        ax1.scatter(times, alt, color='k', marker='.')
 
-        # linee dei crepuscoli. I label sono definiti dopo.
+        # Linee dei crepuscoli. I label sono definiti dopo.
         plt.vlines(sun_naut_twi_0[0], -90, 90, linestyles='dashed', colors='b')
         plt.vlines(sun_naut_twi_0[1], -90, 90, linestyles='dashed', colors='b')
         plt.vlines(sun_astr_twi_0[0], -90, 90, linestyles='solid', colors='b')
@@ -94,10 +104,13 @@ def plot_altaz_onday(targets, location, obstimes):
         # aggiunta dei tick per le airmass
         ax1_ = ax1.twinx()
         ax1_.set_ylim(ax1.get_ylim())
-        ticks_loc = ax1.get_yticks().tolist()
-        ax1_.yaxis.set_major_locator(mticker.FixedLocator(ticks_loc[2:]))
+        # ticks_loc = ax1.get_yticks().tolist()
+        a = [1, 1.5, 2, 2.5, 5, 10]
+        ticks_loc = [90 - np.rad2deg(np.arccos(1/x)) for x in a]
+        # ax1_.yaxis.set_major_locator(mticker.FixedLocator(ticks_loc[2:]))
+        ax1_.yaxis.set_major_locator(mticker.FixedLocator(ticks_loc))
         ax1_ticks = []
-        for tick in ax1.get_yticks():
+        for tick in ax1_.get_yticks():
             if tick > 0:
                 new_tick = 1 / np.cos(np.deg2rad(90 - tick))
                 ax1_ticks.append('{:1.2f}'.format(new_tick))
@@ -108,12 +121,16 @@ def plot_altaz_onday(targets, location, obstimes):
         # plot dell'azimut
         ax2 = plt.subplot2grid((3, 1), (1, 0), rowspan=2)
         ax2.grid()
-        ax2.plot(times, az, 'k-')
-        ax2.plot(times, az_moon, 'k-.',
-                 label='Moon phase = {:.2}$\\rightarrow${:.2}'.format(moon.calculate_moon_phase(sun, obstimes[0]),
-                                                                      moon.calculate_moon_phase(sun, obstimes[-1])))
+        ax2.scatter(
+            times, az_moon, color='grey', marker='o',
+            label='Moon phase = {:.2}$\\rightarrow${:.2}'.format(
+                moon.calculate_moon_phase(sun, obstimes[0]),
+                moon.calculate_moon_phase(sun, obstimes[-1])
+            )
+        )
+        ax2.scatter(times, az, color='k', marker='.')
 
-        # linee dei crepuscoli. I label sono definiti dopo.
+        # Linee dei crepuscoli. I label sono definiti dopo.
         plt.vlines(sun_naut_twi_0[0], 0, 360, linestyles='dashed', colors='b', label='Naut. twilight')
         plt.vlines(sun_naut_twi_0[1], 0, 360, linestyles='dashed', colors='b')
         plt.vlines(sun_astr_twi_0[0], 0, 360, linestyles='solid', colors='b', label='Astr. twilight')
@@ -157,7 +174,8 @@ def plot_altaz_onday(targets, location, obstimes):
         ax1.set_xlim(min(times), max(times))
         ax2.set_xlim(min(times), max(times))
 
-        fig.tight_layout()
+        fig.tight_layout(rect=[0, 0, 1, 0.98])
+        fig.savefig(f'{targets[key].name}_{obstimes[0].iso[:-12]}.pdf')
 
     plt.show()
 
@@ -172,15 +190,22 @@ if __name__ == "__main__":
                'aOri': SkyLocation(locstring='5h55m10.30536s 7d24m25.4304s', name='Betelgeuse'),
                'aCar': SkyLocation(locstring="6h23m57.10988s -52d41m44.3810s", name="Canopus")}
 
+    for k, t in targets.items():
+        print(f'{k}: RA {t.ra:.2f}\tDEC {t.dec:.2f}')
+
     # Inizializzazione dei tempi e plot dei primi quattro grafici
     obstimes = init_times()
+    local_observation = Observation(location=location, obstime=obstimes[0])
 
     plot_altaz_onday(targets, location, obstimes)
 
     # calcolo delle migliori date osservative per i tre target visibili dalla località impostata.
-    best_iUma = Observation.calculate_best_day(targets['iUMa'], location, obstimes[0])
-    best_aLyr = Observation.calculate_best_day(targets['aLyr'], location, obstimes[0])
-    best_aOri = Observation.calculate_best_day(targets['aOri'], location, obstimes[0])
+    best_iUma = local_observation.calculate_best_day(
+        targets['iUMa'], location, obstimes[0])
+    best_aLyr = local_observation.calculate_best_day(
+        targets['aLyr'], location, obstimes[0])
+    best_aOri = local_observation.calculate_best_day(
+        targets['aOri'], location, obstimes[0])
 
     print('best {}:{}'.format(targets['iUMa'].name, best_iUma))
     print('best {}:{}'.format(targets['aLyr'].name, best_aLyr))
@@ -188,17 +213,29 @@ if __name__ == "__main__":
 
     # Calcolo della qualità di osservazione alle date trovate prima.
     sun = Sun(best_iUma)
-    print('quality {}:{}'.format(targets['iUMa'].name,
-                                 Observation.estimate_quality(targets['iUMa'], location, best_iUma, sun,
-                                                              parameter=1.5, interval=2*u.hour, par_type='airmass')))
+    print('quality {}:{}'.format(
+        targets['iUMa'].name,
+        local_observation.estimate_quality(
+            targets['iUMa'], location, best_iUma, sun, parameter=1.5,
+            interval=2*u.hour, par_type='airmass'
+        )
+    ))
     sun = Sun(best_aLyr)
-    print('quality {}:{}'.format(targets['aLyr'].name,
-                                 Observation.estimate_quality(targets['aLyr'], location, best_aLyr, sun,
-                                                              parameter=1.5, interval=2 * u.hour, par_type='airmass')))
+    print('quality {}:{}'.format(
+        targets['aLyr'].name,
+        local_observation.estimate_quality(
+            targets['aLyr'], location, best_aLyr, sun, parameter=1.5,
+            interval=2 * u.hour, par_type='airmass'
+        )
+    ))
     sun = Sun(best_aOri)
-    print('quality {}:{}'.format(targets['aOri'].name,
-                                 Observation.estimate_quality(targets['aOri'], location, best_aOri, sun,
-                                                              parameter=1.5, interval=2 * u.hour, par_type='airmass')))
+    print('quality {}:{}'.format(
+        targets['aOri'].name,
+        local_observation.estimate_quality(
+            targets['aOri'], location, best_aOri, sun, parameter=1.5,
+            interval=2 * u.hour, par_type='airmass'
+        )
+    ))
 
     obstimes_iUma = init_times(best_iUma)
     obstimes_aLyr = init_times(best_aLyr)
@@ -210,43 +247,60 @@ if __name__ == "__main__":
     plot_altaz_onday({'3': targets['aOri']}, location, obstimes_aOri)
 
     # Calcolo del periodo di rivoluzione lunare. ~27.32d
-    from src import Omegasidmoon
+    from src.constants import Omegasidmoon
     Tsidmoon = 1 / Omegasidmoon * 2 * np.pi * u.rad
 
     # Nel caso di aOri, la migliore data comportava una luna piena. Calcolo di +-1w e +-2w, con un offset sugli orari
     # per migliorare la visibilità del grafico.
     obstimes_aOri = init_times(best_aOri - Tsidmoon / 4 - 3 * u.hour)
-    print('quality {}:{}'.format(targets['aOri'].name,
-                                 Observation.estimate_quality(targets['aOri'], location,
-                                                              obstimes_aOri[len(obstimes_aOri) // 2], sun,
-                                                              parameter=1.5, interval=2 * u.hour, par_type='airmass')))
-    print('culm: {}'.format(Observation.calculate_culmination(targets['aOri'], location,
-                                                              obstimes_aOri[len(obstimes_aOri) // 2])))
+    print('quality {}:{}'.format(
+        targets['aOri'].name,
+        local_observation.estimate_quality(
+            targets['aOri'], location, obstimes_aOri[len(obstimes_aOri) // 2],
+            sun, parameter=1.5, interval=2 * u.hour, par_type='airmass'
+        )
+    ))
+    print('culm: {}'.format(
+        local_observation.calculate_culmination(
+            targets['aOri'], location, obstimes_aOri[len(obstimes_aOri) // 2])
+    ))
     plot_altaz_onday({'3': targets['aOri']}, location, obstimes_aOri)
 
     obstimes_aOri = init_times(best_aOri + Tsidmoon / 4 + 5 * u.hour)
-    print('quality {}:{}'.format(targets['aOri'].name,
-                                 Observation.estimate_quality(targets['aOri'], location,
-                                                              obstimes_aOri[len(obstimes_aOri) // 2], sun,
-                                                              parameter=1.5, interval=2 * u.hour, par_type='airmass')))
-    print('culm: {}'.format(Observation.calculate_culmination(targets['aOri'], location,
-                                                              obstimes_aOri[0])))
+    print('quality {}:{}'.format(
+        targets['aOri'].name,
+        local_observation.estimate_quality(
+            targets['aOri'], location, obstimes_aOri[len(obstimes_aOri) // 2],
+            sun, parameter=1.5, interval=2 * u.hour, par_type='airmass')
+    ))
+    print('culm: {}'.format(
+        local_observation.calculate_culmination(
+            targets['aOri'], location, obstimes_aOri[0])
+    ))
     plot_altaz_onday({'3': targets['aOri']}, location, obstimes_aOri)
 
     obstimes_aOri = init_times(best_aOri - Tsidmoon / 2 - 8 * u.hour)
-    print('quality {}:{}'.format(targets['aOri'].name,
-                                 Observation.estimate_quality(targets['aOri'], location,
-                                                              obstimes_aOri[len(obstimes_aOri) // 2], sun,
-                                                              parameter=1.5, interval=2 * u.hour, par_type='airmass')))
-    print('culm: {}'.format(Observation.calculate_culmination(targets['aOri'], location,
-                                                              obstimes_aOri[len(obstimes_aOri) // 2])))
+    print('quality {}:{}'.format(
+        targets['aOri'].name,
+        local_observation.estimate_quality(
+            targets['aOri'], location, obstimes_aOri[len(obstimes_aOri) // 2],
+            sun, parameter=1.5, interval=2 * u.hour, par_type='airmass')
+    ))
+    print('culm: {}'.format(
+        local_observation.calculate_culmination(
+            targets['aOri'], location, obstimes_aOri[len(obstimes_aOri) // 2])
+    ))
     plot_altaz_onday({'3': targets['aOri']}, location, obstimes_aOri)
 
     obstimes_aOri = init_times(best_aOri + Tsidmoon / 2 - 17 * u.hour)
-    print('quality {}:{}'.format(targets['aOri'].name,
-                                 Observation.estimate_quality(targets['aOri'], location,
-                                                              obstimes_aOri[len(obstimes_aOri) // 2], sun,
-                                                              parameter=1.5, interval=2 * u.hour, par_type='airmass')))
-    print('culm: {}'.format(Observation.calculate_culmination(targets['aOri'], location,
-                                                              obstimes_aOri[len(obstimes_aOri) // 2])))
+    print('quality {}:{}'.format(
+        targets['aOri'].name,
+        local_observation.estimate_quality(
+            targets['aOri'], location, obstimes_aOri[len(obstimes_aOri) // 2],
+            sun, parameter=1.5, interval=2 * u.hour, par_type='airmass')
+    ))
+    print('culm: {}'.format(
+        local_observation.calculate_culmination(
+            targets['aOri'], location, obstimes_aOri[len(obstimes_aOri) // 2])
+    ))
     plot_altaz_onday({'3': targets['aOri']}, location, obstimes_aOri)
