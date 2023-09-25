@@ -10,7 +10,7 @@ from ...time import Time
 from ... import Versor
 from .. import SkyLocation
 
-from ... import Equinox2000
+from src.constants import Equinox2000
 
 from .. import errmsg
 
