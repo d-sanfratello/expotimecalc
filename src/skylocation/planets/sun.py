@@ -9,7 +9,7 @@ from ... import Versor
 from .. import SkyLocation
 from .earth import Earth
 
-from ... import Equinox2000
+from src.constants import Equinox2000
 
 from .. import errmsg
 
